@@ -11,9 +11,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('roles', function (Blueprint $table) {
+        Schema::create('tahun_ajarans', function (Blueprint $table) {
             $table->id();
-            $table->string('name', 50)->unique();
+            $table->string('tahun_ajaran');
+            $table->enum('semester', ['ganjil', 'genap']);
             $table->timestamps();
         });
     }
@@ -23,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('roles');
+        Schema::dropIfExists('tahun_ajarans');
     }
 };
