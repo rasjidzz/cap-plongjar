@@ -25,6 +25,7 @@ Route::prefix('auth')->group(function () {
 Route::prefix('roles')->group(function () {
     Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
         Route::get('/', [RoleController::class, 'getAllRoles']);
+        Route::get('/getAllUser', [RoleController::class, 'getAllUser']);
         Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']);
         Route::post('/assignRole', [RoleController::class, 'assignRole']);
         Route::post('/revokeRole', [RoleController::class, 'revokeRole']);

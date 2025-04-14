@@ -14,6 +14,10 @@ class RoleController extends Controller
     {
         $this->user_role_model = $userRole;
     }
+    public function getAllUser()
+    {
+        return User::all();
+    }
     public function getAllRoles()
     {
         return Role::all();
