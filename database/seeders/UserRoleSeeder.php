@@ -16,7 +16,7 @@ class UserRoleSeeder extends Seeder
     {
         $now = now();
 
-        DB::table('user__roles')->insert([
+        DB::table('user_roles')->insert([
             [
                 'id' => 1,
                 'user_id' => 1,
