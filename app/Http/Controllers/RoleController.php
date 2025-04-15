@@ -10,9 +10,11 @@ use Illuminate\Http\Request;
 class RoleController extends Controller
 {
     protected $user_role_model;
-    public function __construct(User_Role $userRole)
+    protected $user_model;
+    public function __construct(User_Role $userRole, User $user)
     {
         $this->user_role_model = $userRole;
+        $this->user_model = $user;
     }
     public function getAllUser()
     {
@@ -21,6 +23,15 @@ class RoleController extends Controller
     public function getAllRoles()
     {
         return Role::all();
+    }
+    public function getAllUserByRole($id_role)
+    {
+        $userData = $this->user_model->getAllUserByRoleId($id_role);
+
+        return response()->json([
+            'message' => 'All User Data by Role Fetched Successfully',
+            'data' => $userData
+        ], 201);
     }
     public function getAllAssignedUserRole()
     {

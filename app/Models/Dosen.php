@@ -10,10 +10,10 @@ class Dosen extends Model
     /** @use HasFactory<\Database\Factories\DosenFactory> */
     use HasFactory;
     protected $fillable = [
-        'nama_dosen',
-        'kode_dosen',
+        'name',
+        'lecturer_code',
         'jabatan_fungsional_akademik',
-        'email_dosen',
+        'email',
         'status_pegawai',
         'pendidikan_terakhir',
         'nidn',

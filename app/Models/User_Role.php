@@ -17,12 +17,6 @@ class User_Role extends Model
     ];
     public function getAllAssignedUserRole()
     {
-        // $data = DB::table('user_roles')
-        //     ->join('users', 'user_roles.user_id', '=', 'users.id')
-        //     ->join('roles', 'user_roles.role_id', '=', 'roles.id')
-        //     ->select('user_roles.id', 'users.name', 'roles.name')
-        //     ->get();
-        // return $data;
         return self::select('user_roles.id as id_user_role', 'users.name as Nama', 'roles.name as Nama_Role')
             ->join('users', 'user_roles.user_id', '=', 'users.id')
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')

@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -27,9 +28,26 @@ Route::prefix('roles')->group(function () {
         Route::get('/', [RoleController::class, 'getAllRoles']);
         Route::get('/getAllUser', [RoleController::class, 'getAllUser']);
         Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']);
+        Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']);
         Route::post('/assignRole', [RoleController::class, 'assignRole']);
         Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
     });
+});
+
+Route::prefix('masterdata')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
+        Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
+        Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
+        Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
+    });
+});
+
+Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+    $data = [
+        'user data' => $request->user(),
+        'role ' => $request->user()->roles[0]->name,
+    ];
+    return $data;
 });
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
