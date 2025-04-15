@@ -2,6 +2,9 @@
 
 Panduan lengkap untuk meng-clone dan menjalankan proyek Laravel 12 secara lokal.
 
+Cheers ! Salam Hangat, 
+Muhammad Risjad Shidqi Febian
+Backend Developer
 ---
 
 ## Prasyarat
