@@ -6,7 +6,7 @@ use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Auth Stuff
+// Authentification and Authorization Stuff
 /*
     role :
         1. Superadmin
@@ -22,6 +22,7 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 });
+// Authentification and Authorization Stuff
 
 Route::prefix('roles')->group(function () {
     Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
