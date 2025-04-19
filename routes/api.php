@@ -1,7 +1,9 @@
 <?php
 
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\DosenController;
 use App\Http\Controllers\MasterDataController;
+use App\Http\Controllers\MatakuliahController;
 use App\Http\Controllers\RoleController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
@@ -40,6 +42,9 @@ Route::prefix('masterdata')->group(function () {
         Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
         Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
         Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
+
+        Route::apiResource('dosens', DosenController::class);
+        Route::apiResource('matakuliahs', MatakuliahController::class);
     });
 });
 
