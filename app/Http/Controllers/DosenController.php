@@ -20,6 +20,29 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
+    public function getAllDosen()
+    {
+        $data = Dosen::with('kelompokKeahlian:id,nama')
+            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+            ->get();
+        return response()->json([
+            'success' => true,
+            'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+            'data' => $data
+        ]);
+    }
+    public function getAllDosenByKKId($id_kk)
+    {
+        $data = Dosen::with('kelompokKeahlian:id,nama')
+            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+            ->where('id_kelompok_keahlian', $id_kk)
+            ->get();
+        return response()->json([
+            'success' => true,
+            'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+            'data' => $data
+        ]);
+    }
 
     /**
      * Show the form for creating a new resource.

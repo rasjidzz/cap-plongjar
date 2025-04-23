@@ -22,6 +22,8 @@ class DosenFactory extends Factory
         return [
             'name' => $this->faker->name(),
             'lecturer_code' => $kode,
+            'nip' => $this->faker->unique()->numerify('##############'),
+            'nidn' => $this->faker->numerify('##########'),
             'email' => $this->faker->unique()->safeEmail(),
             'jabatan_fungsional_akademik' => $this->faker->randomElement(['lektor', 'asissten ahli', 'guru besar', 'lektor kepala', 'NJAD']),
             'status_pegawai' => $this->faker->randomElement([
@@ -32,7 +34,6 @@ class DosenFactory extends Factory
                 'Pegawai Tetap'
             ]),
             'pendidikan_terakhir' => $this->faker->randomElement(['SMA', 'S-1', 'S-2', 'S-3']),
-            'nidn' => $this->faker->numerify('##########'),
             'id_kelompok_keahlian' => $this->faker->numberBetween(1, 5),
         ];
     }

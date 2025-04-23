@@ -31,6 +31,7 @@ Route::prefix('roles')->group(function () {
         Route::get('/', [RoleController::class, 'getAllRoles']);
         Route::get('/getAllUser', [RoleController::class, 'getAllUser']);
         Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']);
+        Route::get('/getAllUnassignedUser', [RoleController::class, 'getAllUnassignedUser']);
         Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']);
         Route::post('/assignRole', [RoleController::class, 'assignRole']);
         Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
@@ -42,7 +43,8 @@ Route::prefix('masterdata')->group(function () {
         Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
         Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
         Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
-
+        Route::get('/getAllDosen', [DosenController::class, 'getAllDosen']);
+        Route::get('/getAllDosen/{id_kk}', [DosenController::class, 'getAllDosenByKKId']);
         Route::apiResource('dosens', DosenController::class);
         Route::apiResource('matakuliahs', MatakuliahController::class);
     });
