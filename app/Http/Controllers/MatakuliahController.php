@@ -33,8 +33,26 @@ class MatakuliahController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'kode_matkul' => 'required|string|max:10|unique:matakuliahs,kode_matkul',
+            'sks' => 'required|integer|min:1|max:6',
+            'praktikum' => 'required|boolean',
+            'id_pic' => 'required|exists:pics,id',
+            'mandatory_status' => 'required|in:wajib_prodi,pilihan',
+            'mode_perkuliahan' => 'required|in:online,onsite,hybrid',
+        ]);
+
+
+
+        $matakuliah = Matakuliah::create($validated);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Matakuliah berhasil ditambahkan.',
+            'data' => $matakuliah->load('pic')
+        ], 201);
     }
+
 
     /**
      * Display the specified resource.
