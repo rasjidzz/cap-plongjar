@@ -12,7 +12,9 @@ class Dosen extends Model
     protected $fillable = [
         'name',
         'lecturer_code',
+        'nip',
         'jabatan_fungsional_akademik',
+        'jabatan_struktural',
         'email',
         'status_pegawai',
         'pendidikan_terakhir',

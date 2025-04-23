@@ -15,6 +15,8 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->char('lecturer_code', 3);
+            $table->string('nip')->unique();
+            $table->string('nidn')->nullable();
             $table->string('email')->unique();
             $table->enum('jabatan_fungsional_akademik', [
                 'lektor',
@@ -23,6 +25,7 @@ return new class extends Migration
                 'lektor kepala',
                 'NJAD'
             ]);
+            $table->string('jabatan_struktural')->nullable();
             $table->enum('status_pegawai', [
                 'Dosen Perbantuan Kopertis',
                 'Dosen Perbantuan Telkom',
@@ -36,7 +39,6 @@ return new class extends Migration
                 'S-2',
                 'S-3'
             ]);
-            $table->string('nidn')->nullable();
             $table->unsignedBigInteger('id_kelompok_keahlian');
             $table->timestamps();
 

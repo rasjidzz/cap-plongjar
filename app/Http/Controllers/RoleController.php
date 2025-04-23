@@ -98,4 +98,13 @@ class RoleController extends Controller
             ], 404);
         }
     }
+    public function getAllUnassignedUser()
+    {
+        $unassignedUsers = User::whereDoesntHave('roles')->get();
+
+        return response()->json([
+            'message' => 'List of users without any role',
+            'data' => $unassignedUsers
+        ], 200);
+    }
 }
