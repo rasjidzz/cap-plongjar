@@ -11,12 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Schema::create('plottingan_pengajarans', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('id_dosen')->constrained('dosens')->onDelete('cascade');
+        //     $table->foreignId('id_mapping_kelas_matakuliah')->constrained('mapping_kelas_matakuliahs')->onDelete('cascade');
+        //     $table->timestamps();
+        //     $table->softDeletes();
+        // });
         Schema::create('plottingan_pengajarans', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_dosen')->constrained('dosens')->onDelete('cascade');
             $table->foreignId('id_mapping_kelas_matakuliah')->constrained('mapping_kelas_matakuliahs')->onDelete('cascade');
+            $table->integer('beban_sks');
             $table->timestamps();
-            $table->softDeletes();
+            $table->softDeletes(); // untuk fitur soft delete
         });
     }
 

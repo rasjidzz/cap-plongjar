@@ -16,6 +16,7 @@ class MatakuliahSeeder extends Seeder
     {
         // Membuat 10 data Matakuliah secara manual
         Matakuliah::create([
+            'nama_matakuliah' => 'CONTOH MATAKULIAH SATU',
             'kode_matkul' => 'MTK101',
             'sks' => 3,
             'praktikum' => true,
@@ -25,6 +26,7 @@ class MatakuliahSeeder extends Seeder
         ]);
 
         Matakuliah::create([
+            'nama_matakuliah' => 'CONTOH MATAKULIAH DUA',
             'kode_matkul' => 'MTK102',
             'sks' => 2,
             'praktikum' => false,
@@ -34,6 +36,7 @@ class MatakuliahSeeder extends Seeder
         ]);
 
         Matakuliah::create([
+            'nama_matakuliah' => 'CONTOH MATAKULIAH TIGA',
             'kode_matkul' => 'MTK103',
             'sks' => 4,
             'praktikum' => true,
@@ -43,6 +46,7 @@ class MatakuliahSeeder extends Seeder
         ]);
 
         Matakuliah::create([
+            'nama_matakuliah' => 'CONTOH MATAKULIAH EMPAT',
             'kode_matkul' => 'MTK104',
             'sks' => 3,
             'praktikum' => false,
