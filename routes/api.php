@@ -49,6 +49,7 @@ Route::prefix('masterdata')->group(function () {
         Route::get('/getAllDosen/{id_kk}', [DosenController::class, 'getAllDosenByKKId']);
         Route::apiResource('dosens', DosenController::class);
         Route::get('/getAllMatakuliah', [MatakuliahController::class, 'index']);
+        Route::get('/getDosenDetail/{id_dosen}', [DosenController::class, 'getDosenDetailData']);
     });
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi'])->group(function () {
         Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MatakuliahController::class, 'getAllDosenByKKId']);

@@ -91,6 +91,66 @@ class DosenController extends Controller
             'data' => $dosen
         ], 201);
     }
+    // public function getDosenDetailData($id_dosen)
+    // {
+    //     $data = Dosen::with('kelompokKeahlian:id,nama')
+    //         ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+    //         ->where('id', $id_dosen)
+    //         ->get();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+    //         'data' => $data
+    //     ]);
+    // }
+
+    public function getDosenDetailData($id_dosen)
+    {
+        $dosen = Dosen::with('kelompokKeahlian:id,nama')
+            ->select(
+                'id',
+                'name',
+                'lecturer_code',
+                'jabatan_struktural',
+                'nip',
+                'nidn',
+                'id_kelompok_keahlian',
+                'status_pegawai',
+                'email',
+                'jabatan_fungsional_akademik',
+                'pendidikan_terakhir'
+            )
+            ->where('id', $id_dosen)
+            ->first();
+
+        if (!$dosen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dosen tidak ditemukan.',
+                'data' => null
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail Data Dosen',
+            'data' => [
+                'nama_dosen' => $dosen->name,
+                'kode_dosen' => $dosen->lecturer_code,
+                'jabatan' => $dosen->jabatan_struktural,
+                'home_base' => null,
+                'nip' => $dosen->nip,
+                'nidn' => $dosen->nidn,
+                'bidang_keahlian' => $dosen->kelompokKeahlian?->nama,
+                'status' => $dosen->status_pegawai,
+                'contact_person' => $dosen->email,
+                'jfa' => $dosen->jabatan_fungsional_akademik,
+                'riwayat_pengajaran' => url("/riwayat-mengajar/{$dosen->id}"),
+                'pendidikan' => $dosen->pendidikan_terakhir,
+            ]
+        ]);
+    }
+
 
     /**
      * Display the specified resource.
