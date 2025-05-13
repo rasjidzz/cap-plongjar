@@ -20,14 +20,33 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
-    public function getAllDosen()
+    public function getAllDosen(Request $request)
     {
-        $data = Dosen::with('kelompokKeahlian:id,nama')
+        // $data = Dosen::with('kelompokKeahlian:id,nama')
+        //     ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+        //     ->get();
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+        //     'data' => $data
+        // ]);
+
+        $query = Dosen::with('kelompokKeahlian:id,nama')
             ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
-            ->get();
+            ->when($request->search, function ($q) use ($request) {
+                $q->where(function ($subQuery) use ($request) {
+                    $subQuery->where('name', 'like', '%' . $request->search . '%')
+                        ->orWhere('lecturer_code', 'like', '%' . $request->search . '%')
+                        ->orWhere('nip', 'like', '%' . $request->search . '%');
+                });
+            });
+
+        // Default pagination: 10 per page, bisa dicustom lewat query param ?per_page=
+        $data = $query->paginate($request->get('per_page', 10));
+
         return response()->json([
             'success' => true,
-            'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+            'message' => 'List All Dosen (filtered & paginated)',
             'data' => $data
         ]);
     }
