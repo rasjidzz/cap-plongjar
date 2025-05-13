@@ -10,6 +10,7 @@ class Matakuliah extends Model
 
     // Menentukan kolom yang bisa diisi
     protected $fillable = [
+        'nama_matakuliah',
         'kode_matkul',
         'sks',
         'praktikum',

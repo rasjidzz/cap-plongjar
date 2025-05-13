@@ -22,4 +22,8 @@ class MappingKelasMatakuliah extends Model
     {
         return $this->belongsTo(TahunAjaran::class, 'id_tahun_ajaran');
     }
+    public function plottinganPengajarans()
+    {
+        return $this->hasMany(PlottinganPengajaran::class, 'id_mapping_kelas_matakuliah');
+    }
 }

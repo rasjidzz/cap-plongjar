@@ -26,4 +26,8 @@ class Dosen extends Model
     {
         return $this->belongsTo(KelompokKeahlian::class, 'id_kelompok_keahlian');
     }
+    public function plottinganPengajarans()
+    {
+        return $this->hasMany(PlottinganPengajaran::class, 'id_dosen');
+    }
 }

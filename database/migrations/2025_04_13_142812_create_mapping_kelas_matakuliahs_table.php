@@ -11,12 +11,21 @@ return new class extends Migration
      */
     public function up(): void
     {
+        // Schema::create('mapping_kelas_matakuliahs', function (Blueprint $table) {
+        //     $table->id();
+        //     $table->foreignId('id_matakuliah')->constrained('matakuliahs')->onDelete('cascade');
+        //     $table->foreignId('id_tahun_ajaran')->constrained('tahun_ajarans')->onDelete('cascade');
+        //     $table->string('nama_kelas');
+        //     $table->integer('kuota');
+        //     $table->timestamps();
+        // });
         Schema::create('mapping_kelas_matakuliahs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('id_matakuliah')->constrained('matakuliahs')->onDelete('cascade');
             $table->foreignId('id_tahun_ajaran')->constrained('tahun_ajarans')->onDelete('cascade');
             $table->string('nama_kelas');
-            $table->integer('kuota');
+            $table->integer('kuota')->default(0);
+            $table->boolean('team_teaching')->default(false);
             $table->timestamps();
         });
     }

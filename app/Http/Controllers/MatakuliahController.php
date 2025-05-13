@@ -34,6 +34,7 @@ class MatakuliahController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'nama_matakuliah' => 'required|string|max:255',
             'kode_matkul' => 'required|string|max:10|unique:matakuliahs,kode_matkul',
             'sks' => 'required|integer|min:1|max:6',
             'praktikum' => 'required|boolean',
