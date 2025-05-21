@@ -14,8 +14,8 @@ class User_Role extends Model
     protected $fillable = [
         'user_id',
         'role_id',
-        'unitable_id',
-        'unitable_type',
+        'roleable_id',
+        'roleable_type'
     ];
     public function getAllAssignedUserRole()
     {
@@ -24,7 +24,17 @@ class User_Role extends Model
             ->join('roles', 'user_roles.role_id', '=', 'roles.id')
             ->get();
     }
-    public function unitable()
+    public function user()
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function roleable()
     {
         return $this->morphTo();
     }
