@@ -15,43 +15,45 @@ class PICSeeder extends Seeder
     {
         Pic::create(
             [
-                'name' => 'BPA'
+                'name' => 'BPA',
+                'picable_id' => null,
+                'picable_type' => null
             ]
         );
-        Pic::create(
-            [
-                'name' => 'S1 Informatika'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'S1 Rekayasa Perangkat Lunak'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'S1 Data Sains'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'S1 Informasi Teknologi'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'SEAL'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'CITI'
-            ]
-        );
-        Pic::create(
-            [
-                'name' => 'DSIS'
-            ]
-        );
+        // Pic::create(
+        //     [
+        //         'name' => 'S1 Informatika'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'S1 Rekayasa Perangkat Lunak'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'S1 Data Sains'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'S1 Informasi Teknologi'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'SEAL'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'CITI'
+        //     ]
+        // );
+        // Pic::create(
+        //     [
+        //         'name' => 'DSIS'
+        //     ]
+        // );
     }
 }

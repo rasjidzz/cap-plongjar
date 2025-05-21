@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('nama');
             $table->timestamps();
-            $table->softDeletes(); // Untuk kolom deleted_at
+            $table->softDeletes();
         });
     }
 

@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pics', function (Blueprint $table) {
+        Schema::create('program_studis', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            // $table->string('nama_pic');
-            $table->unsignedBigInteger('picable_id')->nullable();
-            $table->string('picable_type')->nullable();
+            $table->string('nama');
             $table->timestamps();
-            $table->index(['picable_id', 'picable_type']);
+            $table->softDeletes();
         });
     }
 
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pics');
+        Schema::dropIfExists('program_studis');
     }
 };
