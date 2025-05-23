@@ -2,22 +2,20 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\ProgramStudi;
-use App\Http\Requests\StoreProgramStudiRequest;
-use App\Http\Requests\UpdateProgramStudiRequest;
+use App\Models\KelompokKeahlian;
+use Illuminate\Http\Request;
 
-class ProgramStudiController extends Controller
+class KelompokKeahlianController extends Controller
 {
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
-        $prodi = ProgramStudi::all();
-
+        $kelompokKeahlian = KelompokKeahlian::all();
         return response()->json([
             'status' => 'success',
-            'data' => $prodi
+            'data' => $kelompokKeahlian
         ]);
     }
 
@@ -32,7 +30,7 @@ class ProgramStudiController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(StoreProgramStudiRequest $request)
+    public function store(Request $request)
     {
         //
     }
@@ -40,7 +38,7 @@ class ProgramStudiController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ProgramStudi $programStudi)
+    public function show(KelompokKeahlian $kelompokKeahlian)
     {
         //
     }
@@ -48,7 +46,7 @@ class ProgramStudiController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(ProgramStudi $programStudi)
+    public function edit(KelompokKeahlian $kelompokKeahlian)
     {
         //
     }
@@ -56,7 +54,7 @@ class ProgramStudiController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(UpdateProgramStudiRequest $request, ProgramStudi $programStudi)
+    public function update(Request $request, KelompokKeahlian $kelompokKeahlian)
     {
         //
     }
@@ -64,7 +62,7 @@ class ProgramStudiController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ProgramStudi $programStudi)
+    public function destroy(KelompokKeahlian $kelompokKeahlian)
     {
         //
     }

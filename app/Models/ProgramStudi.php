@@ -23,4 +23,13 @@ class ProgramStudi extends Model
             ]);
         });
     }
+    public function getRoleableTypeAttribute(): string
+    {
+        return self::class; // menghasilkan "App\Models\ProgramStudi"
+    }
+    public function getUnitTypeAttribute(): string
+    {
+        return 'program_studi';
+    }
+    protected $appends = ['roleable_type', 'unit_type'];
 }

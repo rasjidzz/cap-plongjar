@@ -33,16 +33,36 @@ class RoleController extends Controller
             'data' => $userData
         ], 201);
     }
+    // public function getAllAssignedUserRole()
+    // {
+    //     $data = $this->user_role_model->getAllAssignedUserRole();
+    //     return $data;
+    // }
     public function getAllAssignedUserRole()
     {
-        $data = $this->user_role_model->getAllAssignedUserRole();
-        return $data;
+        $data = $this->user_role_model
+            ->with(['user', 'role', 'roleable'])
+            ->get()
+            ->map(function ($item) {
+                return [
+                    'id_user_role' => $item->id,
+                    'nama_user' => $item->user->name,
+                    'nama_role' => $item->role->name,
+                    'roleable_nama' => $item->roleable ? $item->roleable->nama : null,
+                    'roleable_type' => class_basename($item->roleable_type),
+                ];
+            });
+
+        return response()->json($data);
     }
+
     public function assignRole(Request $request)
     {
         $request->validate([
             'user_id' => 'required|integer',
             'role_id' => 'required|integer',
+            'roleable_id' => 'required|integer',
+            'roleable_type' => 'required|string'
         ]);
 
         $user = User::find($request->user_id);
@@ -60,6 +80,8 @@ class RoleController extends Controller
         }
         $alreadyAssigned = User_Role::where('user_id', $user->id)
             ->where('role_id', $role->id)
+            ->where('roleable_id', $request->roleable_id)
+            ->where('roleable_type', $request->roleable_type)
             ->exists();
 
         if ($alreadyAssigned) {
@@ -70,7 +92,9 @@ class RoleController extends Controller
 
         User_Role::create([
             'user_id' => $user->id,
-            'role_id' => $role->id
+            'role_id' => $role->id,
+            'roleable_id' => $request->roleable_id,
+            'roleable_type' => $request->roleable_type
         ]);
 
         return response()->json([

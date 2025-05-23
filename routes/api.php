@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DosenController;
+use App\Http\Controllers\KelompokKeahlianController;
 use App\Http\Controllers\MappingKelasMatakuliahController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MatakuliahController;
+use App\Http\Controllers\ProgramStudiController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TahunAjaranController;
 use Illuminate\Http\Request;
@@ -50,6 +52,8 @@ Route::prefix('masterdata')->group(function () {
         Route::apiResource('dosens', DosenController::class);
         Route::get('/getAllMatakuliah', [MatakuliahController::class, 'index']);
         Route::get('/getDosenDetail/{id_dosen}', [DosenController::class, 'getDosenDetailData']);
+        Route::get('/programstudi', [ProgramStudiController::class, 'index']);
+        Route::get('/kelompokkeahlian', [KelompokKeahlianController::class, 'index']);
     });
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi'])->group(function () {
         Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MatakuliahController::class, 'getAllDosenByKKId']);

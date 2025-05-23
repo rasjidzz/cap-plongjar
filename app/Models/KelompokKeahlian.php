@@ -33,4 +33,14 @@ class KelompokKeahlian extends Model
             ]);
         });
     }
+    public function getRoleableTypeAttribute(): string
+    {
+        return self::class;
+    }
+
+    public function getUnitTypeAttribute(): string
+    {
+        return 'kelompok_keahlian';
+    }
+    protected $appends = ['roleable_type', 'unit_type'];
 }
