@@ -69,7 +69,8 @@ class AuthController extends Controller
         }
 
         // Generate token
-        $token = $user->createToken($request->email)->plainTextToken;
+        // $token = $user->createToken($request->email)->plainTextToken;
+        $token = $user->createToken($request->email);
 
         // Ambil semua role dengan informasi terkait
         $roles = User_Role::with('role', 'roleable')

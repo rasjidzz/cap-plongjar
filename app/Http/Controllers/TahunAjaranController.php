@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class TahunAjaranController extends Controller
 {
@@ -33,7 +34,29 @@ class TahunAjaranController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $validated = $request->validate([
+            'tahun_ajaran' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('tahun_ajarans')->where(function ($query) use ($request) {
+                    return $query->where('semester', $request->semester);
+                }),
+            ],
+            'semester' => ['required', Rule::in(['ganjil', 'genap'])],
+        ]);
+
+
+        $tahunAjaran = TahunAjaran::create([
+            'tahun_ajaran' => $validated['tahun_ajaran'],
+            'semester' => $validated['semester'],
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tahun Ajaran berhasil ditambahkan.',
+            'data' => $tahunAjaran
+        ], 201);
     }
 
     /**

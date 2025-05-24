@@ -14,7 +14,7 @@ class Dosen extends Model
         'lecturer_code',
         'nip',
         'jabatan_fungsional_akademik',
-        'jabatan_struktural',
+        'id_jabatan_struktural',
         'email',
         'status_pegawai',
         'pendidikan_terakhir',
