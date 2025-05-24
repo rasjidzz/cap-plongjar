@@ -20,6 +20,17 @@ use Illuminate\Support\Facades\Route;
         3. KelompokKeahlian
         4. LayananAkademik
         5. KepalaUrusanLab
+
+    Kelompok Keahlian :
+        1. SEAL
+        2. CITI
+        3. DSIS
+
+    Program Studi :
+        1. S1 Informatika
+        2. S1 Rekayasa Perangkat Lunak
+        3. S1 Data Sains
+        4. S1 Information Technology
 */
 
 Route::prefix('auth')->group(function () {

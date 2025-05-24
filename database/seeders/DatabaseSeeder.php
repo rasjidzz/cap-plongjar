@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
                 ProgramStudiSeeder::class,
                 KelompokKeahlianSeeder::class,
                 MatakuliahSeeder::class,
+                JabatanStrukturalSeeder::class,
                 DosenSeeder::class,
                 UserRoleSeeder::class,
                 TahunAjaranSeeder::class,

@@ -25,7 +25,9 @@ return new class extends Migration
                 'lektor kepala',
                 'NJAD'
             ]);
-            $table->string('jabatan_struktural')->nullable();
+            // $table->string('jabatan_struktural')->nullable();
+            $table->unsignedBigInteger('id_jabatan_struktural')->nullable();
+
             $table->enum('status_pegawai', [
                 'Dosen Perbantuan Kopertis',
                 'Dosen Perbantuan Telkom',
@@ -39,9 +41,10 @@ return new class extends Migration
                 'S-2',
                 'S-3'
             ]);
+
             $table->unsignedBigInteger('id_kelompok_keahlian');
             $table->timestamps();
-
+            $table->foreign('id_jabatan_struktural')->references('id')->on('jabatan_strukturals')->onDelete('set null');
             $table->foreign('id_kelompok_keahlian')->references('id')->on('kelompok_keahlians')->onDelete('cascade');
         });
     }

@@ -30,4 +30,8 @@ class Dosen extends Model
     {
         return $this->hasMany(PlottinganPengajaran::class, 'id_dosen');
     }
+    public function jabatanStruktural()
+    {
+        return $this->belongsTo(JabatanStruktural::class, 'id_jabatan_struktural');
+    }
 }
