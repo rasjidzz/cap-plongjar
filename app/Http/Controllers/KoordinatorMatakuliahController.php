@@ -12,10 +12,15 @@ class KoordinatorMatakuliahController extends Controller
      */
     public function index()
     {
-        $data = KoordinatorMatakuliah::all();
+        $data = KoordinatorMatakuliah::with([
+            'dosen:id,name,lecturer_code', // Ambil ID, nama, dan kode dosen
+            'mappingKelasMatakuliah:id,nama_kelas,id_matakuliah,id_tahun_ajaran', // Ambil info dasar mapping
+            'mappingKelasMatakuliah.matakuliah:id,nama_matakuliah,kode_matkul', // Ambil info mata kuliah dari mapping
+            'mappingKelasMatakuliah.tahunAjaran:id,tahun_ajaran,semester' // Ambil info tahun ajaran dari mapping
+        ])->get();
         return response()->json([
             'success' => true,
-            'message' => 'Get Data Koordinator Matakuliah',
+            'message' => 'Get All Data Koordinator Matakuliah With Dosen, MappingKelasMatakuliah, Matakuliah, Tahun Ajaran',
             'data' => $data
         ]);
     }
@@ -41,7 +46,19 @@ class KoordinatorMatakuliahController extends Controller
 
     public function show(KoordinatorMatakuliah $koordinatorMatakuliah)
     {
-        //
+        // Muat relasi yang diinginkan ke instance model yang sudah ada.
+        $koordinatorMatakuliah->load([
+            'dosen:id,name,lecturer_code',
+            'mappingKelasMatakuliah:id,nama_kelas,id_matakuliah,id_tahun_ajaran',
+            'mappingKelasMatakuliah.matakuliah:id,nama_matakuliah,kode_matkul',
+            'mappingKelasMatakuliah.tahunAjaran:id,tahun_ajaran,semester'
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Detail Data Koordinator Mata Kuliah Berhasil Dimuat',
+            'data' => $koordinatorMatakuliah
+        ]);
     }
 
     public function update(Request $request, KoordinatorMatakuliah $koordinatorMatakuliah)
