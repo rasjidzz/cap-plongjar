@@ -14,7 +14,7 @@ class Dosen extends Model
         'lecturer_code',
         'nip',
         'jabatan_fungsional_akademik',
-        'jabatan_struktural',
+        'id_jabatan_struktural',
         'email',
         'status_pegawai',
         'pendidikan_terakhir',
@@ -29,5 +29,9 @@ class Dosen extends Model
     public function plottinganPengajarans()
     {
         return $this->hasMany(PlottinganPengajaran::class, 'id_dosen');
+    }
+    public function jabatanStruktural()
+    {
+        return $this->belongsTo(JabatanStruktural::class, 'id_jabatan_struktural');
     }
 }

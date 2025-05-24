@@ -20,6 +20,25 @@ class MappingKelasMatakuliahController extends Controller
         ]);
     }
 
+    public function getMappingKelasMatkulbyIdMatkul($id_matakuliah)
+    {
+        $data = MappingKelasMatakuliah::with(['matakuliah', 'tahunAjaran'])
+            ->where('id_matakuliah', $id_matakuliah)
+            ->get();
+
+        if ($data->isEmpty()) {
+            return response()->json([
+                'status' => 'error',
+                'message' => 'Mapping kelas matakuliah tidak ditemukan',
+            ], 404);
+        }
+
+        return response()->json([
+            'status' => 'success',
+            'data' => $data,
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */

@@ -2,15 +2,19 @@
 
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DosenController;
+use App\Http\Controllers\JabatanStrukturalController;
+use App\Http\Controllers\KelompokKeahlianController;
+use App\Http\Controllers\KoordinatorMatakuliahController;
 use App\Http\Controllers\MappingKelasMatakuliahController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MatakuliahController;
+use App\Http\Controllers\ProgramStudiController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TahunAjaranController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
-// Authentification and Authorization Stuff
+// 1. Authentification and Authorization Stuff
 /*
     role :
         1. Superadmin
@@ -18,6 +22,17 @@ use Illuminate\Support\Facades\Route;
         3. KelompokKeahlian
         4. LayananAkademik
         5. KepalaUrusanLab
+
+    Kelompok Keahlian :
+        1. SEAL
+        2. CITI
+        3. DSIS
+
+    Program Studi :
+        1. S1 Informatika
+        2. S1 Rekayasa Perangkat Lunak
+        3. S1 Data Sains
+        4. S1 Information Technology
 */
 
 Route::prefix('auth')->group(function () {
@@ -26,8 +41,9 @@ Route::prefix('auth')->group(function () {
 
     Route::middleware('auth:sanctum')->post('/logout', [AuthController::class, 'logout']);
 });
-// Authentification and Authorization Stuff
+// 1. Authentification and Authorization Stuff
 
+// 2. Role Management Stuff
 Route::prefix('roles')->group(function () {
     Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
         Route::get('/', [RoleController::class, 'getAllRoles']);
@@ -39,25 +55,57 @@ Route::prefix('roles')->group(function () {
         Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
     });
 });
+// 2. Role Management Stuff
 
+// 3. Master Data
 Route::prefix('masterdata')->group(function () {
+    // SUPER_ADMIN, PROGRAM_STUDI, KELOMPOK_KEAHLIAN
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
+        // PIC MANAGEMENT
         Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
-        Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
         Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
+
+        // DOSEN MANAGEMENT
+        Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
         Route::get('/getAllDosen', [DosenController::class, 'getAllDosen']);
         Route::get('/getAllDosen/{id_kk}', [DosenController::class, 'getAllDosenByKKId']);
         Route::apiResource('dosens', DosenController::class);
-        Route::get('/getAllMatakuliah', [MatakuliahController::class, 'index']);
         Route::get('/getDosenDetail/{id_dosen}', [DosenController::class, 'getDosenDetailData']);
+
+        // MATAKULIAH, PROGRAM_STUDI, KELOMPOK_KEAHLIAN, MAPPING_KELAS_MATKUL
+        Route::get('/getAllMatakuliah', [MatakuliahController::class, 'index']);
+        Route::get('/programstudi', [ProgramStudiController::class, 'index']);
+        Route::get('/kelompokkeahlian', [KelompokKeahlianController::class, 'index']);
+        Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul']);
+
+        // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
+        Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
     });
+
+    // ROLE PROGRAM STUDI ONLY (SUPER_ADMIN AND PROGRAM_STUDI)
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi'])->group(function () {
-        Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MatakuliahController::class, 'getAllDosenByKKId']);
         Route::apiResource('matakuliahs', MatakuliahController::class);
         Route::apiResource('tahunajarans', TahunAjaranController::class);
         Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class);
     });
+
+    // JABATAN STRUKTURAL MANAGEMENT (SUPER_ADMIN ONLY)
+    Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
+        Route::apiResource('jabatanstruktural', JabatanStrukturalController::class);
+        Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']);
+        Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']);
+    });
+
+    // MAPPING KELAS MATAKULIAH MANAGEMENT (SUPER_ADMIN, PROGRAM_STUDI)
+    Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class)->middleware('role:Superadmin,ProgramStudi');
+    // Specific read operation accessible by Superadmin, ProgramStudi, KelompokKeahlian
+    Route::get('/mappingkelasmatakuliahs/by-matakuliah/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul'])
+        ->middleware('role:Superadmin,ProgramStudi,KelompokKeahlian')
+        ->name('mappingkelasmatakuliahs.byMatakuliah');
 });
+// 3. Master Data
+
+// Route::prefix('matakuliah')->group(function () {});
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     $data = [
@@ -69,4 +117,13 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
 
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $request->user();
+});
+
+
+
+Route::fallback(function () {
+    return response()->json([
+        'success' => false,
+        'message' => 'API endpoint not found.'
+    ], 404);
 });

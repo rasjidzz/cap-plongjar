@@ -11,14 +11,11 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('pics', function (Blueprint $table) {
+        Schema::create('jabatan_strukturals', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            // $table->string('nama_pic');
-            $table->unsignedBigInteger('picable_id')->nullable();
-            $table->string('picable_type')->nullable();
+            $table->string('nama');
+            $table->integer('konversi_sks'); // besar SKS yang dikonversi
             $table->timestamps();
-            $table->index(['picable_id', 'picable_type']);
         });
     }
 
@@ -27,6 +24,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('pics');
+        Schema::dropIfExists('jabatan_strukturals');
     }
 };

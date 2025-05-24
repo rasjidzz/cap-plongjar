@@ -23,11 +23,14 @@ class DatabaseSeeder extends Seeder
                 RoleSeeder::class,
                 UserSeeder::class,
                 PICSeeder::class,
-                MatakuliahSeeder::class,
+                ProgramStudiSeeder::class,
                 KelompokKeahlianSeeder::class,
+                MatakuliahSeeder::class,
+                JabatanStrukturalSeeder::class,
                 DosenSeeder::class,
                 UserRoleSeeder::class,
-                TahunAjaranSeeder::class
+                TahunAjaranSeeder::class,
+                MappingKelasMatakuliahSeeder::class
             ]
         );
     }

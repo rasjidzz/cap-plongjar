@@ -28,29 +28,75 @@ class AuthController extends Controller
             'status_code' => 201
         ], 201);
     }
+    // public function login(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'email' => 'required|string|email',
+    //         'password' => 'required|string|min:6',
+    //     ]);
+    //     $user = User::where('email', $validated['email'])->first();
+
+    //     if (!$user || !Hash::check($request->password, $user->password)) {
+    //         return response()->json([
+    //             'status' => 'Login Failed',
+    //             'message' => 'The provided credentials are incorrect',
+    //             'data' => $user
+    //         ], 401);
+    //     }
+
+    //     $token = $user->createToken($request->email);
+
+    //     return response()->json([
+    //         'message' => 'Login Success',
+    //         'token' => $token,
+    //         'data' => $user
+    //     ], 201);
+    // }
     public function login(Request $request)
     {
         $validated = $request->validate([
             'email' => 'required|string|email',
             'password' => 'required|string|min:6',
         ]);
+
         $user = User::where('email', $validated['email'])->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             return response()->json([
                 'status' => 'Login Failed',
-                'message' => 'The provided credentials are incorrect',
-                'data' => $user
+                'message' => 'The provided credentials are incorrect'
             ], 401);
         }
 
+        // Generate token
+        // $token = $user->createToken($request->email)->plainTextToken;
         $token = $user->createToken($request->email);
 
+        // Ambil semua role dengan informasi terkait
+        $roles = User_Role::with('role', 'roleable')
+            ->where('user_id', $user->id)
+            ->get()
+            ->map(function ($userRole) {
+                return [
+                    'role_id' => $userRole->role_id,
+                    'role_name' => $userRole->role->name,
+                    'roleable_type' => $userRole->roleable_type,
+                    'roleable_id' => $userRole->roleable_id,
+                    'roleable_name' => $userRole->roleable?->nama ?? null,
+                ];
+            });
+
         return response()->json([
-            'message' => 'Login Success',
+            'status' => 'success',
+            'message' => 'Login success',
             'token' => $token,
-            'data' => $user
-        ], 201);
+            'user' => [
+                'id' => $user->id,
+                'name' => $user->name,
+                'email' => $user->email,
+            ],
+            'roles' => $roles
+        ], 200);
     }
     public function logout(Request $request)
     {

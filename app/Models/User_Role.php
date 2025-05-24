@@ -13,13 +13,29 @@ class User_Role extends Model
     protected $table = 'user_roles';
     protected $fillable = [
         'user_id',
-        'role_id'
+        'role_id',
+        'roleable_id',
+        'roleable_type'
     ];
-    public function getAllAssignedUserRole()
+    // public function getAllAssignedUserRole()
+    // {
+    //     return self::select('user_roles.id as id_user_role', 'users.name as Nama', 'roles.name as Nama_Role')
+    //         ->join('users', 'user_roles.user_id', '=', 'users.id')
+    //         ->join('roles', 'user_roles.role_id', '=', 'roles.id')
+    //         ->get();
+    // }
+    public function user()
     {
-        return self::select('user_roles.id as id_user_role', 'users.name as Nama', 'roles.name as Nama_Role')
-            ->join('users', 'user_roles.user_id', '=', 'users.id')
-            ->join('roles', 'user_roles.role_id', '=', 'roles.id')
-            ->get();
+        return $this->belongsTo(User::class);
+    }
+
+    public function role()
+    {
+        return $this->belongsTo(Role::class);
+    }
+
+    public function roleable()
+    {
+        return $this->morphTo();
     }
 }

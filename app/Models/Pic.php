@@ -18,4 +18,8 @@ class Pic extends Model
     {
         return $this->hasMany(Matakuliah::class, 'id_pic');
     }
+    public function picable()
+    {
+        return $this->morphTo();
+    }
 }
