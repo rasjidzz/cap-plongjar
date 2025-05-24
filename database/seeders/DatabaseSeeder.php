@@ -30,6 +30,7 @@ class DatabaseSeeder extends Seeder
                 DosenSeeder::class,
                 UserRoleSeeder::class,
                 TahunAjaranSeeder::class,
+                MappingKelasMatakuliahSeeder::class
             ]
         );
     }

@@ -12,47 +12,169 @@ class MatakuliahSeeder extends Seeder
     /**
      * Run the database seeds.
      */
+    // public function run(): void
+    // {
+    //     // Membuat 10 data Matakuliah secara manual
+    //     Matakuliah::create([
+    //         'nama_matakuliah' => 'CONTOH MATAKULIAH SATU',
+    //         'kode_matkul' => 'MTK101',
+    //         'sks' => 3,
+    //         'praktikum' => true,
+    //         'id_pic' => 1,
+    //         'mandatory_status' => 'wajib_prodi',
+    //         'mode_perkuliahan' => 'online',
+    //     ]);
+
+    //     Matakuliah::create([
+    //         'nama_matakuliah' => 'CONTOH MATAKULIAH DUA',
+    //         'kode_matkul' => 'MTK102',
+    //         'sks' => 2,
+    //         'praktikum' => false,
+    //         'id_pic' => 2,
+    //         'mandatory_status' => 'pilihan',
+    //         'mode_perkuliahan' => 'onsite',
+    //     ]);
+
+    //     Matakuliah::create([
+    //         'nama_matakuliah' => 'CONTOH MATAKULIAH TIGA',
+    //         'kode_matkul' => 'MTK103',
+    //         'sks' => 4,
+    //         'praktikum' => true,
+    //         'id_pic' => 3,
+    //         'mandatory_status' => 'wajib_prodi',
+    //         'mode_perkuliahan' => 'hybrid',
+    //     ]);
+
+    //     Matakuliah::create([
+    //         'nama_matakuliah' => 'CONTOH MATAKULIAH EMPAT',
+    //         'kode_matkul' => 'MTK104',
+    //         'sks' => 3,
+    //         'praktikum' => false,
+    //         'id_pic' => 4,
+    //         'mandatory_status' => 'pilihan',
+    //         'mode_perkuliahan' => 'online',
+    //     ]);
+    // }
     public function run(): void
     {
-        // Membuat 10 data Matakuliah secara manual
-        Matakuliah::create([
-            'nama_matakuliah' => 'CONTOH MATAKULIAH SATU',
-            'kode_matkul' => 'MTK101',
-            'sks' => 3,
-            'praktikum' => true,
-            'id_pic' => 1,
-            'mandatory_status' => 'wajib_prodi',
-            'mode_perkuliahan' => 'online',
-        ]);
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF2121'], // Kunci untuk pengecekan
+            [
+                'nama_matakuliah' => 'Algoritma dan Struktur Data',
+                'sks' => 4,
+                'praktikum' => true,
+                'id_pic' => 1, // Asumsi ID PIC sudah ada dan relevan
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'hybrid',
+            ]
+        );
 
-        Matakuliah::create([
-            'nama_matakuliah' => 'CONTOH MATAKULIAH DUA',
-            'kode_matkul' => 'MTK102',
-            'sks' => 2,
-            'praktikum' => false,
-            'id_pic' => 2,
-            'mandatory_status' => 'pilihan',
-            'mode_perkuliahan' => 'onsite',
-        ]);
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF2230'],
+            [
+                'nama_matakuliah' => 'Sistem Operasi',
+                'sks' => 3,
+                'praktikum' => true,
+                'id_pic' => 2,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'onsite',
+            ]
+        );
 
-        Matakuliah::create([
-            'nama_matakuliah' => 'CONTOH MATAKULIAH TIGA',
-            'kode_matkul' => 'MTK103',
-            'sks' => 4,
-            'praktikum' => true,
-            'id_pic' => 3,
-            'mandatory_status' => 'wajib_prodi',
-            'mode_perkuliahan' => 'hybrid',
-        ]);
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF3110'],
+            [
+                'nama_matakuliah' => 'Jaringan Komputer',
+                'sks' => 3,
+                'praktikum' => true,
+                'id_pic' => 3,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'hybrid',
+            ]
+        );
 
-        Matakuliah::create([
-            'nama_matakuliah' => 'CONTOH MATAKULIAH EMPAT',
-            'kode_matkul' => 'MTK104',
-            'sks' => 3,
-            'praktikum' => false,
-            'id_pic' => 4,
-            'mandatory_status' => 'pilihan',
-            'mode_perkuliahan' => 'online',
-        ]);
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF3240'],
+            [
+                'nama_matakuliah' => 'Basis Data',
+                'sks' => 4,
+                'praktikum' => true,
+                'id_pic' => 4,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'onsite',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF4071'],
+            [
+                'nama_matakuliah' => 'Kecerdasan Buatan',
+                'sks' => 3,
+                'praktikum' => true,
+                'id_pic' => 5,
+                'mandatory_status' => 'pilihan',
+                'mode_perkuliahan' => 'online',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF4031'],
+            [
+                'nama_matakuliah' => 'Rekayasa Perangkat Lunak',
+                'sks' => 4,
+                'praktikum' => true,
+                'id_pic' => 6,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'hybrid',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF3270'],
+            [
+                'nama_matakuliah' => 'Pemrograman Berorientasi Objek',
+                'sks' => 3,
+                'praktikum' => true,
+                'id_pic' => 7,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'onsite',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF4081'],
+            [
+                'nama_matakuliah' => 'Keamanan Informasi',
+                'sks' => 3,
+                'praktikum' => false,
+                'id_pic' => 8,
+                'mandatory_status' => 'pilihan',
+                'mode_perkuliahan' => 'online',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF2250'],
+            [
+                'nama_matakuliah' => 'Logika Informatika',
+                'sks' => 2,
+                'praktikum' => false,
+                'id_pic' => 9,
+                'mandatory_status' => 'wajib_prodi',
+                'mode_perkuliahan' => 'onsite',
+            ]
+        );
+
+        Matakuliah::updateOrCreate(
+            ['kode_matkul' => 'IF4092'],
+            [
+                'nama_matakuliah' => 'Pengembangan Aplikasi Web',
+                'sks' => 3,
+                'praktikum' => true,
+                'id_pic' => 10,
+                'mandatory_status' => 'pilihan',
+                'mode_perkuliahan' => 'hybrid',
+            ]
+        );
     }
 }
