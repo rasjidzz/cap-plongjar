@@ -14,12 +14,14 @@ class AuthController extends Controller
     {
         $validated = $request->validate([
             'name' => 'required|string|max:255',
-            'email' => 'required|string|email|unique:users,email',
-            'password' => 'required|string|min:6',
+            'email' => 'required|string|email|max:255|unique:users,email',
+            'nip' => 'required|string|max:255|unique:users,nip', // Aturan untuk NIP
+            'password' => 'required|string|min:6', // Anda mungkin ingin menambahkan konfirmasi password di sini: 'password' => 'required|string|min:6|confirmed'
         ]);
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
+            'nip' => $validated['nip'], // Menyimpan NIP
             'password' => bcrypt($validated['password']),
         ]);
 
