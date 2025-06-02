@@ -12,6 +12,7 @@ class PlottinganPengajaran extends Model
     protected $fillable = [
         'id_mapping_kelas_matakuliah',
         'id_dosen',
+        'beban_sks'
     ];
 
     public function dosen()

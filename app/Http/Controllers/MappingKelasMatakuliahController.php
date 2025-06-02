@@ -39,6 +39,34 @@ class MappingKelasMatakuliahController extends Controller
         ]);
     }
 
+    public function getMappingKelasMatkulByIdMatkulandIdTahunAjaran($id_matakuliah, $id_tahunajaran)
+    {
+        $data = MappingKelasMatakuliah::with([
+            'matakuliah:id,kode_matkul,nama_matakuliah,sks', // Memuat detail mata kuliah
+            'tahunAjaran:id,tahun_ajaran,semester',         // Memuat detail tahun ajaran
+            'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen', // Memuat plottingan
+            'plottinganPengajarans.dosen:id,name,lecturer_code' // Memuat dosen dari plottingan
+        ])
+            ->where('id_matakuliah', $id_matakuliah)
+            ->where('id_tahun_ajaran', $id_tahunajaran)
+            ->orderBy('nama_kelas', 'asc') // Urutkan berdasarkan nama kelas
+            ->get();
+
+        if ($data->isEmpty()) {
+            return response()->json([
+                'success' => true, // Atau false jika Anda menganggap tidak ada data sebagai "error"
+                'message' => 'Tidak ada data mapping kelas mata kuliah yang ditemukan untuk kriteria yang diberikan.',
+                'data' => []
+            ], 200); // atau 404 jika Anda ingin mengindikasikan resource tidak ditemukan
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data mapping kelas mata kuliah berhasil dimuat.',
+            'data' => $data
+        ]);
+    }
+
     /**
      * Show the form for creating a new resource.
      */

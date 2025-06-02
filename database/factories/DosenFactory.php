@@ -56,6 +56,7 @@ class DosenFactory extends Factory
                 'NJAD'
             ]),
             'status_pegawai' => $this->faker->randomElement([
+                'Dosen LB',
                 'Dosen Perbantuan Kopertis',
                 'Dosen Perbantuan Telkom',
                 'Dosen Profesional (full time)',

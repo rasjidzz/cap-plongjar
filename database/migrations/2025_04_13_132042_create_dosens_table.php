@@ -29,6 +29,7 @@ return new class extends Migration
             $table->unsignedBigInteger('id_jabatan_struktural')->nullable();
 
             $table->enum('status_pegawai', [
+                'Dosen LB',
                 'Dosen Perbantuan Kopertis',
                 'Dosen Perbantuan Telkom',
                 'Dosen Profesional (full time)',
