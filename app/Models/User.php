@@ -54,9 +54,15 @@ class User extends Authenticatable
         })->with('roles')
             ->get();
     }
+    // public function roles()
+    // {
+    //     return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+    // }
     public function roles()
     {
-        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id');
+        return $this->belongsToMany(Role::class, 'user_roles', 'user_id', 'role_id')
+            ->withPivot('roleable_id', 'roleable_type') // <-- Tambahkan ini
+            ->withTimestamps(); // Opsional, jika tabel pivot Anda memiliki timestamps (created_at, updated_at)
     }
     public function hasRole($roleName)
     {

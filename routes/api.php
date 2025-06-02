@@ -8,6 +8,7 @@ use App\Http\Controllers\KoordinatorMatakuliahController;
 use App\Http\Controllers\MappingKelasMatakuliahController;
 use App\Http\Controllers\MasterDataController;
 use App\Http\Controllers\MatakuliahController;
+use App\Http\Controllers\PlottinganPengajaranController;
 use App\Http\Controllers\ProgramStudiController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TahunAjaranController;
@@ -77,6 +78,7 @@ Route::prefix('masterdata')->group(function () {
         Route::get('/programstudi', [ProgramStudiController::class, 'index']);
         Route::get('/kelompokkeahlian', [KelompokKeahlianController::class, 'index']);
         Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul']);
+        Route::get('/mapping-kelas-matakuliah/by-matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahunajaran}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulByIdMatkulandIdTahunAjaran']);
 
         // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
         Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
@@ -104,6 +106,12 @@ Route::prefix('masterdata')->group(function () {
         ->name('mappingkelasmatakuliahs.byMatakuliah');
 });
 // 3. Master Data
+
+Route::prefix('plottingan-pengajaran')->group(function () {
+    Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
+        Route::apiResource('start-plottingan-pengajaran', PlottinganPengajaranController::class);
+    });
+});
 
 // Route::prefix('matakuliah')->group(function () {});
 

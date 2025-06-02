@@ -34,4 +34,22 @@ class Dosen extends Model
     {
         return $this->belongsTo(JabatanStruktural::class, 'id_jabatan_struktural');
     }
+    public function getTotalSKS(int $tahun_ajaran)
+    {
+        $total_sks = $this->plottinganPengajarans()
+            ->join('mapping_kelas_matakuliahs', 'plottingan_pengajarans.id_mapping_kelas_matakuliah', '=', 'mapping_kelas_matakuliahs.id')
+            ->join('matakuliahs', 'mapping_kelas_matakuliahs.id_matakuliah', '=', 'matakuliahs.id')
+            ->where('mapping_kelas_matakuliahs.id_tahun_ajaran', $tahun_ajaran)
+            ->sum('matakuliahs.sks');
+        return (int) $total_sks;
+    }
+    public function getTotalSksMengajarPadaTahunAjaran(int $id_tahun_ajaran): int
+    {
+        $totalSks = $this->plottinganPengajarans() // Memulai dari relasi plottinganPengajarans milik dosen ini
+            ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran) {
+                $query->where('id_tahun_ajaran', $id_tahun_ajaran);
+            })
+            ->sum('beban_sks'); // Menjumlahkan kolom 'beban_sks' dari hasil plottingan yang sudah terfilter.
+        return (int) $totalSks; // Mengembalikan hasil sebagai integer.
+    }
 }

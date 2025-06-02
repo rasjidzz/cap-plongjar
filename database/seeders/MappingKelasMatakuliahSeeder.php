@@ -12,12 +12,12 @@ class MappingKelasMatakuliahSeeder extends Seeder
 {
     public function run(): void
     {
-        $matakuliahIds = Matakuliah::orderBy('id')->take(5)->pluck('id')->toArray();
+        $matakuliahIds = Matakuliah::orderBy('id')->take(10)->pluck('id')->toArray();
 
         $tahunAjaran = TahunAjaran::find(1);
 
         $classNames = [];
-        for ($i = 1; $i <= 5; $i++) {
+        for ($i = 1; $i <= 3; $i++) {
             $classNames[] = 'SE-45-' . str_pad($i, 2, '0', STR_PAD_LEFT);
         }
 

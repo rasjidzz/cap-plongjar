@@ -23,15 +23,6 @@ class DosenController extends Controller
     }
     public function getAllDosen(Request $request)
     {
-        // $data = Dosen::with('kelompokKeahlian:id,nama')
-        //     ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
-        //     ->get();
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
-        //     'data' => $data
-        // ]);
-
         $query = Dosen::with('kelompokKeahlian:id,nama')
             ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
             ->when($request->search, function ($q) use ($request) {
