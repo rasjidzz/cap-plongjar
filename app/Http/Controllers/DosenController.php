@@ -295,7 +295,84 @@ class DosenController extends Controller
         }
     }
 
-    public function getLaporanBebanSksDosen($id_tahun_ajaran)
+    // public function getLaporanBebanSksDosen($id_tahun_ajaran)
+    // {
+    //     // Validasi apakah tahun ajaran ada
+    //     $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+    //     if (!$tahunAjaran) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Tahun Ajaran tidak ditemukan.',
+    //             'data' => []
+    //         ], 404);
+    //     }
+
+    //     // Ambil semua dosen beserta relasi yang dibutuhkan
+    //     $dosens = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
+    //         ->orderBy('name', 'asc') // Urutkan berdasarkan nama dosen
+    //         ->get();
+
+    //     // Ambil semua program studi untuk iterasi
+    //     $programStudis = ProgramStudi::select(['id', 'nama'])->get();
+
+    //     $maksimalSksMengajarDefault = 16; // Batas SKS mengajar normal
+
+    //     $laporanData = $dosens->map(function ($dosen) use ($id_tahun_ajaran, $programStudis, $maksimalSksMengajarDefault) {
+    //         $konversi_sks_jabatan = 0;
+    //         $nama_jabatan_struktural = null;
+
+    //         if ($dosen->jabatanStruktural) {
+    //             $konversi_sks_jabatan = (int)$dosen->jabatanStruktural->konversi_sks;
+    //             $nama_jabatan_struktural = $dosen->jabatanStruktural->nama;
+    //         }
+
+    //         $maxAjarSks = $maksimalSksMengajarDefault - $konversi_sks_jabatan;
+    //         // Pastikan maxAjarSks tidak negatif
+    //         $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks;
+
+    //         // Hitung total SKS mengajar pada tahun ajaran ini
+    //         // Menggunakan method yang sudah ada di model Dosen
+    //         $totalAjarSksKeseluruhan = $dosen->getTotalSksMengajarPadaTahunAjaran((int)$id_tahun_ajaran);
+
+    //         // Hitung total SKS mengajar per program studi
+    //         $totalAjarPerProdi = [];
+    //         foreach ($programStudis as $prodi) {
+    //             $sksDiProdiIni = $dosen->plottinganPengajarans()
+    //                 ->whereHas('mappingKelasMatakuliah', function ($queryMKM) use ($id_tahun_ajaran, $prodi) {
+    //                     $queryMKM->where('id_tahun_ajaran', $id_tahun_ajaran)
+    //                         ->where('id_program_studi', $prodi->id);
+    //                 })
+    //                 ->sum('beban_sks');
+
+    //             // Hanya tambahkan ke array jika SKS > 0 untuk menjaga output tetap bersih
+    //             if ($sksDiProdiIni > 0) {
+    //                 $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
+    //             }
+    //         }
+
+    //         return [
+    //             'kode_dosen'        => $dosen->lecturer_code,
+    //             'nama_dosen'        => $dosen->name,
+    //             'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null,
+    //             'jfa'               => $dosen->jabatan_fungsional_akademik,
+    //             'jabatan_struktural' => $nama_jabatan_struktural,
+    //             'sks_ekuivalen_jabatan' => $konversi_sks_jabatan, // Tambahan: SKS dari jabatan
+    //             'max_ajar_sks'      => $maxAjarSks,
+    //             'status_pegawai'    => $dosen->status_pegawai,
+    //             'total_ajar_per_prodi' => !empty($totalAjarPerProdi) ? $totalAjarPerProdi : null, // Menampilkan SKS per prodi
+    //             'total_ajar_sks_keseluruhan' => $totalAjarSksKeseluruhan,
+    //             'sisa_sks_mengajar' => $maxAjarSks - $totalAjarSksKeseluruhan, // Tambahan: Sisa SKS yang bisa diambil
+    //         ];
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Laporan Beban SKS Dosen untuk Tahun Ajaran ' . $tahunAjaran->tahun_ajaran . ' (' . $tahunAjaran->semester . ') berhasil dimuat.',
+    //         'data' => $laporanData
+    //     ]);
+    // }
+
+    public function getLaporanBebanSksDosen(Request $request, $id_tahun_ajaran)
     {
         // Validasi apakah tahun ajaran ada
         $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
@@ -307,17 +384,28 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Ambil semua dosen beserta relasi yang dibutuhkan
-        $dosens = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
-            ->orderBy('name', 'asc') // Urutkan berdasarkan nama dosen
-            ->get();
+        // Ambil parameter pencarian dan paginasi dari request
+        $searchTerm = $request->query('search', ''); // Untuk mencari nama dosen
+        $perPage = $request->query('per_page', 10);  // Jumlah item per halaman, default 15
 
-        // Ambil semua program studi untuk iterasi
-        $programStudis = ProgramStudi::select(['id', 'nama'])->get();
+        // Mulai query builder untuk Dosen
+        $dosenQuery = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks']);
+
+        // Terapkan filter pencarian jika ada searchTerm
+        if (!empty($searchTerm)) {
+            $dosenQuery->where('name', 'LIKE', "%{$searchTerm}%");
+        }
+
+        // Lakukan paginasi pada query dosen
+        $paginatedDosens = $dosenQuery->orderBy('name', 'asc')->paginate($perPage);
+
+        // Ambil semua program studi untuk iterasi (tetap diperlukan untuk setiap dosen dalam halaman)
+        $programStudis = ProgramStudi::select(['id', 'nama'])->get(); // 'nama' diganti 'name' sesuai contoh data Anda
 
         $maksimalSksMengajarDefault = 16; // Batas SKS mengajar normal
 
-        $laporanData = $dosens->map(function ($dosen) use ($id_tahun_ajaran, $programStudis, $maksimalSksMengajarDefault) {
+        // Transformasi data untuk dosen yang ada di halaman saat ini
+        $laporanData = $paginatedDosens->getCollection()->map(function ($dosen) use ($id_tahun_ajaran, $programStudis, $maksimalSksMengajarDefault) {
             $konversi_sks_jabatan = 0;
             $nama_jabatan_struktural = null;
 
@@ -327,14 +415,10 @@ class DosenController extends Controller
             }
 
             $maxAjarSks = $maksimalSksMengajarDefault - $konversi_sks_jabatan;
-            // Pastikan maxAjarSks tidak negatif
             $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks;
 
-            // Hitung total SKS mengajar pada tahun ajaran ini
-            // Menggunakan method yang sudah ada di model Dosen
             $totalAjarSksKeseluruhan = $dosen->getTotalSksMengajarPadaTahunAjaran((int)$id_tahun_ajaran);
 
-            // Hitung total SKS mengajar per program studi
             $totalAjarPerProdi = [];
             foreach ($programStudis as $prodi) {
                 $sksDiProdiIni = $dosen->plottinganPengajarans()
@@ -344,8 +428,8 @@ class DosenController extends Controller
                     })
                     ->sum('beban_sks');
 
-                // Hanya tambahkan ke array jika SKS > 0 untuk menjaga output tetap bersih
                 if ($sksDiProdiIni > 0) {
+                    // Menggunakan $prodi->name (atau $prodi->nama jika itu nama kolomnya)
                     $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
                 }
             }
@@ -353,25 +437,33 @@ class DosenController extends Controller
             return [
                 'kode_dosen'        => $dosen->lecturer_code,
                 'nama_dosen'        => $dosen->name,
-                'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null,
+                'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null, // 'nama' diganti 'name'
                 'jfa'               => $dosen->jabatan_fungsional_akademik,
                 'jabatan_struktural' => $nama_jabatan_struktural,
-                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan, // Tambahan: SKS dari jabatan
+                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
                 'max_ajar_sks'      => $maxAjarSks,
                 'status_pegawai'    => $dosen->status_pegawai,
-                'total_ajar_per_prodi' => !empty($totalAjarPerProdi) ? $totalAjarPerProdi : null, // Menampilkan SKS per prodi
+                'total_ajar_per_prodi' => !empty($totalAjarPerProdi) ? $totalAjarPerProdi : null,
                 'total_ajar_sks_keseluruhan' => $totalAjarSksKeseluruhan,
-                'sisa_sks_mengajar' => $maxAjarSks - $totalAjarSksKeseluruhan, // Tambahan: Sisa SKS yang bisa diambil
+                'sisa_sks_mengajar' => $maxAjarSks - $totalAjarSksKeseluruhan,
             ];
         });
+
+        // Membuat respons paginasi manual untuk data yang sudah ditransformasi
+        $paginatedResponse = new \Illuminate\Pagination\LengthAwarePaginator(
+            $laporanData,
+            $paginatedDosens->total(),
+            $paginatedDosens->perPage(),
+            $paginatedDosens->currentPage(),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return response()->json([
             'success' => true,
             'message' => 'Laporan Beban SKS Dosen untuk Tahun Ajaran ' . $tahunAjaran->tahun_ajaran . ' (' . $tahunAjaran->semester . ') berhasil dimuat.',
-            'data' => $laporanData
+            'data' => $paginatedResponse // Mengembalikan data yang sudah dipaginasi
         ]);
     }
-
     /**
      * Display the specified resource.
      */
