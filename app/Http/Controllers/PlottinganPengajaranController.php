@@ -12,6 +12,8 @@ use App\Models\Dosen;
 use App\Models\KelompokKeahlian;
 use App\Models\ProgramStudi;
 use App\Models\TahunAjaran;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PlottinganPengajaranExport;
 
 class PlottinganPengajaranController extends Controller
 {
@@ -528,6 +530,21 @@ class PlottinganPengajaranController extends Controller
         //     'team_teaching',
         //     'matakuliah_eksepsi'
         // ];
+    }
+
+    public function exportHasilPlottinganToExcel($id_tahun_ajaran)
+    {
+        // Validasi apakah tahun ajaran ada (opsional tapi baik)
+        $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+        if (!$tahunAjaran) {
+            // Anda bisa mengembalikan error 404 atau pesan lain jika tahun ajaran tidak ditemukan
+            // Untuk export, biasanya lebih baik menghentikan proses jika data sumber tidak valid
+            abort(404, 'Tahun Ajaran tidak ditemukan.');
+        }
+
+        $fileName = 'hasil_plottingan_pengajaran_' . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_' . $tahunAjaran->semester . '.xlsx';
+
+        return Excel::download(new PlottinganPengajaranExport((int)$id_tahun_ajaran), $fileName);
     }
 
     /**

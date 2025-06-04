@@ -114,6 +114,7 @@ Route::prefix('plottingan-pengajaran')->group(function () {
         Route::apiResource('start-plottingan-pengajaran', PlottinganPengajaranController::class);
         Route::get('/get-hasil-plottingan-pengajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'getHasilPlottinganPengajaranByTahunAjaranId']);
     });
+    Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
 });
 
 // Route::prefix('matakuliah')->group(function () {});
