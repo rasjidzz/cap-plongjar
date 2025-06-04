@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Matakuliah;
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 
 class MatakuliahController extends Controller
 {
@@ -31,27 +32,65 @@ class MatakuliahController extends Controller
     /**
      * Store a newly created resource in storage.
      */
+    // public function store(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'nama_matakuliah' => 'required|string|max:255',
+    //         'kode_matkul' => 'required|string|max:10|unique:matakuliahs,kode_matkul',
+    //         'sks' => 'required|integer|min:1|max:6',
+    //         'praktikum' => 'required|boolean',
+    //         'id_pic' => 'required|exists:pics,id',
+    //         'mandatory_status' => 'required|in:wajib_prodi,pilihan',
+    //         'mode_perkuliahan' => 'required|in:online,onsite,hybrid',
+    //     ]);
+
+    //     $matakuliah = Matakuliah::create($validated);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Matakuliah berhasil ditambahkan.',
+    //         'data' => $matakuliah->load('pic')
+    //     ], 201);
+    // }
+
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'nama_matakuliah' => 'required|string|max:255',
-            'kode_matkul' => 'required|string|max:10|unique:matakuliahs,kode_matkul',
-            'sks' => 'required|integer|min:1|max:6',
-            'praktikum' => 'required|boolean',
-            'id_pic' => 'required|exists:pics,id',
-            'mandatory_status' => 'required|in:wajib_prodi,pilihan',
-            'mode_perkuliahan' => 'required|in:online,onsite,hybrid',
-        ]);
+        try {
+            $validatedData = $request->validate([
+                'nama_matakuliah' => 'required|string|max:255',
+                'kode_matkul' => 'required|string|max:10|unique:matakuliahs,kode_matkul', // Pastikan tabel dan kolom unik benar
+                'sks' => 'required|integer|min:1|max:6', // Batas SKS bisa disesuaikan
+                'praktikum' => 'required|boolean',
+                'id_pic' => 'required|exists:pics,id', // Pastikan tabel 'pics' ada
+                'mandatory_status' => 'required|in:wajib_prodi,pilihan',
+                'mode_perkuliahan' => 'required|in:online,onsite,hybrid',
+                'matakuliah_eksepsi' => 'required|in:ya,tidak',
+                'tingkat_matakuliah' => 'required|in:Tingkat 1,Tingkat 2,Tingkat 3,Tingkat 4',
+            ]);
 
+            $hour_target = $validatedData['sks'] * 16;
 
+            $dataToCreate = array_merge($validatedData, ['hour_target' => $hour_target]);
 
-        $matakuliah = Matakuliah::create($validated);
+            $matakuliah = Matakuliah::create($dataToCreate);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Matakuliah berhasil ditambahkan.',
-            'data' => $matakuliah->load('pic')
-        ], 201);
+            return response()->json([
+                'success' => true,
+                'message' => 'Matakuliah berhasil ditambahkan.',
+                'data' => $matakuliah->load('pic') //
+            ], 201);
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menambahkan mata kuliah karena terjadi kesalahan pada server.',
+            ], 500);
+        }
     }
 
 
