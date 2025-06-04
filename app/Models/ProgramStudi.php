@@ -23,6 +23,10 @@ class ProgramStudi extends Model
             ]);
         });
     }
+    public function mappingKelasMatakuliahs()
+    {
+        return $this->hasMany(MappingKelasMatakuliah::class, 'id_program_studi');
+    }
     public function getRoleableTypeAttribute(): string
     {
         return self::class; // menghasilkan "App\Models\ProgramStudi"

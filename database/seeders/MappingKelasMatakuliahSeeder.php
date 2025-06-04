@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\MappingKelasMatakuliah;
 use App\Models\Matakuliah;
 use App\Models\TahunAjaran;
+use App\Models\ProgramStudi;
 use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 
@@ -16,6 +17,8 @@ class MappingKelasMatakuliahSeeder extends Seeder
 
         $tahunAjaran = TahunAjaran::find(1);
 
+        $progamStudi = ProgramStudi::find(3);
+
         $classNames = [];
         for ($i = 1; $i <= 3; $i++) {
             $classNames[] = 'SE-45-' . str_pad($i, 2, '0', STR_PAD_LEFT);
@@ -23,6 +26,7 @@ class MappingKelasMatakuliahSeeder extends Seeder
 
         $defaultKuota = 40; // Kuota default untuk setiap kelas
         $tahunAjaranId = $tahunAjaran->id; // Dapatkan ID dari objek TahunAjaran
+        $programStudiId = $progamStudi->id;
 
         foreach ($matakuliahIds as $matakuliahId) {
             foreach ($classNames as $className) {
@@ -35,6 +39,7 @@ class MappingKelasMatakuliahSeeder extends Seeder
                         'nama_kelas' => $className,
                     ], // Kunci untuk pengecekan duplikasi
                     [
+                        'id_program_studi' => $programStudiId,
                         'kuota' => $defaultKuota, // Menggunakan kuota default
                         'team_teaching' => $isTeamTeaching, // Menggunakan kolom 'team_teaching'
                     ] // Data yang akan diisi atau diupdate

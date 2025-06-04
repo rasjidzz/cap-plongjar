@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('id_matakuliah')->constrained('matakuliahs')->onDelete('cascade');
             $table->foreignId('id_tahun_ajaran')->constrained('tahun_ajarans')->onDelete('cascade');
+            $table->foreignId('id_program_studi')->constrained('program_studis')->onDelete('cascade');;
             $table->string('nama_kelas');
             $table->integer('kuota')->default(0);
             $table->boolean('team_teaching')->default(false);

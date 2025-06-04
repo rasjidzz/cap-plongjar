@@ -11,6 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Models\Dosen;
 use App\Models\KelompokKeahlian;
 use App\Models\ProgramStudi;
+use App\Models\TahunAjaran;
 
 class PlottinganPengajaranController extends Controller
 {
@@ -402,6 +403,131 @@ class PlottinganPengajaranController extends Controller
                 'message' => 'Terjadi kesalahan pada server saat menyimpan data.',
             ], 500);
         }
+    }
+
+    public function getHasilPlottinganPengajaranByTahunAjaranId($id_tahun_ajaran)
+    {
+        // Validasi apakah tahun ajaran ada (opsional tapi baik)
+        $tahunAjaranExists = TahunAjaran::find($id_tahun_ajaran);
+        if (!$tahunAjaranExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tahun Ajaran tidak ditemukan.',
+                'data' => []
+            ], 404);
+        }
+
+        $plottinganItems = PlottinganPengajaran::with([
+            'dosen:id,name,lecturer_code',
+            'mappingKelasMatakuliah' => function ($query) {
+                $query->select([ // Pilih kolom spesifik dari mapping_kelas_matakuliahs
+                    'id',
+                    'id_matakuliah',
+                    'id_tahun_ajaran',
+                    'nama_kelas',
+                    'kuota',
+                    'team_teaching' // Kolom team_teaching dari mapping_kelas_matakuliahs
+                ])
+                    ->with([
+                        'matakuliah' => function ($matakuliahQuery) {
+                            // Pilih kolom spesifik dari matakuliahs
+                            $matakuliahQuery->select([
+                                'id',
+                                'nama_matakuliah',
+                                'kode_matkul',
+                                'sks',
+                                'praktikum',
+                                'id_pic',
+                                'mandatory_status',
+                                'tingkat_matakuliah',
+                                'hour_target',
+                                'matakuliah_eksepsi'
+                                // 'tingkat_matakuliah', 'hour_target', 'matakuliah_eksepsi' // Jika ada
+                            ])->with('pic:id,name'); // Relasi pic dari matakuliah
+                        },
+                        'tahunAjaran:id,tahun_ajaran,semester', // Relasi tahunAjaran dari mapping
+                        'koordinatorMatakuliah' => function ($kmQuery) {
+                            // Relasi koordinatorMatakuliah dari mapping
+                            $kmQuery->select(['id', 'id_dosen', 'id_mapping_kelas_matakuliah'])
+                                ->with('dosen:id,name,lecturer_code'); // Dosen koordinator
+                        }
+                    ]);
+            }
+        ])
+            ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran) {
+                // Filter PlottinganPengajaran berdasarkan id_tahun_ajaran di MappingKelasMatakuliah
+                $query->where('id_tahun_ajaran', $id_tahun_ajaran);
+            })
+            ->get();
+
+        // Transformasi data ke format yang diinginkan
+        $formattedData = $plottinganItems->map(function ($plot) {
+            $mkm = $plot->mappingKelasMatakuliah;
+            $matakuliah = $mkm ? $mkm->matakuliah : null;
+            $pic = $matakuliah ? $matakuliah->pic : null;
+            $dosenPengajar = $plot->dosen;
+            $koordinatorPlot = $mkm ? $mkm->koordinatorMatakuliah : null;
+            $dosenKoordinator = $koordinatorPlot ? $koordinatorPlot->dosen : null;
+            $tahunAjaranInfo = $mkm ? $mkm->tahunAjaran : null;
+
+            return [
+                // 'id_plottingan'                 => $plot->id, // ID dari plottingan itu sendiri
+                // 'id_mapping_kelas_matakuliah'   => $mkm ? $mkm->id : null,
+                // 'id_matakuliah'                 => $matakuliah ? $matakuliah->id : null,
+                // 'id_dosen_pengajar'             => $dosenPengajar ? $dosenPengajar->id : null, // Tambahan: ID dosen pengajar
+                // 'nama_dosen_pengajar'           => $dosenPengajar ? $dosenPengajar->name : null, // Tambahan: nama dosen pengajar
+                // 'sks_kredit'                    => $matakuliah ? $matakuliah->sks : null,
+                // 'kuota_kelas'                   => $mkm ? $mkm->kuota : null, // Tambahan: kuota kelas
+                // 'id_dosen_koordinator'          => $dosenKoordinator ? $dosenKoordinator->id : null, // Tambahan: ID dosen koordinator
+                // 'nama_dosen_koordinator'        => $dosenKoordinator ? $dosenKoordinator->name : null, // Tambahan: nama dosen koordinator
+                'kode_matakuliah'                   => $matakuliah ? $matakuliah->kode_matkul : null, // Tambahan: kode matkul
+                'nama_matakuliah'               => $matakuliah ? $matakuliah->nama_matakuliah : null,
+                'pic'                      => $pic ? $pic->name : null,
+                'kode_dosen_pengajar'           => $dosenPengajar ? $dosenPengajar->lecturer_code : null,
+                'mandatory_status'              => $matakuliah ? $matakuliah->mandatory_status : null,
+                'tingkat_matakuliah'            => $matakuliah->tingkat_matakuliah ?? null, // Placeholder, ganti jika ada fieldnya
+                'beban_sks_dosen_pengajar'      => $plot->beban_sks, // Tambahan: SKS yang dibebankan ke dosen ini
+                'nama_kelas'                    => $mkm ? $mkm->nama_kelas : null,
+                'praktikum'                     => $matakuliah ? ($matakuliah->praktikum ? 'Yes' : 'No') : null,
+                'kode_dosen_koordinator'        => $dosenKoordinator ? $dosenKoordinator->lecturer_code : null,
+                'hour_target'                   => $matakuliah->hour_target ?? null, // Placeholder, ganti jika ada fieldnya
+                'tahun_ajaran'          => $tahunAjaranInfo ? ($tahunAjaranInfo->tahun_ajaran . ' - ' . $tahunAjaranInfo->semester) : null,
+                'team_teaching_kelas'           => $mkm ? ($mkm->team_teaching ? 'Yes' : 'No') : null,
+                'matakuliah_eksepsi'            => $matakuliah->matakuliah_eksepsi ?? null, // Placeholder, ganti jika ada fieldnya
+            ];
+        });
+
+        if ($formattedData->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada data plottingan pengajaran yang ditemukan untuk tahun ajaran ini.',
+                'data' => []
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hasil Plottingan Pengajaran berhasil dimuat.',
+            'data' => $formattedData
+        ]);
+
+        // $rawData = PlottinganPengajaran; -> ambil data dari Model Plottingan Pnegajaran Relasi ke Tabel Mapping_kelas_matakuliah, matakuliah, pic, koordinatorMatakuliah
+        // $data = [
+        //     'id_matakuliah',
+        //     'nama_matakuliah',
+        //     'nama_pic',
+        //     'kode_dosen',
+        //     'mandatory_status',
+        //     'tingkat_matakuliah',
+        //     'sks/kredit',
+        //     'nama_kelas',
+        //     'praktikum',
+        //     'kode_dosen_koordinator',
+        //     'tahun_ajaran',
+        //     'hour_target',
+        //     'team_teaching',
+        //     'matakuliah_eksepsi'
+        // ];
     }
 
     /**

@@ -9,6 +9,7 @@ class MappingKelasMatakuliah extends Model
     protected $fillable = [
         'id_matakuliah',
         'id_tahun_ajaran',
+        'id_program_studi',
         'nama_kelas',
         'kuota',
     ];
@@ -25,5 +26,13 @@ class MappingKelasMatakuliah extends Model
     public function plottinganPengajarans()
     {
         return $this->hasMany(PlottinganPengajaran::class, 'id_mapping_kelas_matakuliah');
+    }
+    public function koordinatorMatakuliah()
+    {
+        return $this->hasOne(KoordinatorMatakuliah::class, 'id_mapping_kelas_matakuliah', 'id');
+    }
+    public function programStudi()
+    {
+        return $this->belongsTo(ProgramStudi::class, 'id_program_studi');
     }
 }

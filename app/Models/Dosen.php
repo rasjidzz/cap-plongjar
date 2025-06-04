@@ -34,6 +34,10 @@ class Dosen extends Model
     {
         return $this->belongsTo(JabatanStruktural::class, 'id_jabatan_struktural');
     }
+    public function koordinatorMatakuliah() // Nama relasi bisa disesuaikan
+    {
+        return $this->hasMany(KoordinatorMatakuliah::class, 'id_dosen');
+    }
     public function getTotalSKS(int $tahun_ajaran)
     {
         $total_sks = $this->plottinganPengajarans()
