@@ -124,6 +124,7 @@ class MappingKelasMatakuliahController extends Controller
         $validatedData = $request->validate([
             'id_matakuliah' => 'required|integer|exists:matakuliahs,id',
             'id_tahun_ajaran' => 'required|integer|exists:tahun_ajarans,id',
+            'id_program_studi' => 'required|integer|exists:program_studis,id',
             'classes' => 'required|array|min:1', // Pastikan 'classes' adalah array dan tidak kosong
             'classes.*.nama_kelas' => [ // Validasi untuk setiap 'nama_kelas' dalam array 'classes'
                 'required',
@@ -184,6 +185,7 @@ class MappingKelasMatakuliahController extends Controller
                 $mapping = MappingKelasMatakuliah::create([
                     'id_matakuliah'   => $validatedData['id_matakuliah'],
                     'id_tahun_ajaran' => $validatedData['id_tahun_ajaran'],
+                    'id_program_studi' => $validatedData['id_program_studi'],
                     'nama_kelas'      => $classData['nama_kelas'],
                     'kuota'           => $classData['kuota'],
                     'team_teaching'   => $classData['team_teaching'],

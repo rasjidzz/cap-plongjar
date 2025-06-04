@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dosen;
+use App\Models\ProgramStudi;
+use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 // use App\Http\Controllers\Log;
@@ -291,6 +293,83 @@ class DosenController extends Controller
                 'message' => 'Terjadi kesalahan pada server saat melepas jabatan.',
             ], 500);
         }
+    }
+
+    public function getLaporanBebanSksDosen($id_tahun_ajaran)
+    {
+        // Validasi apakah tahun ajaran ada
+        $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+        if (!$tahunAjaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tahun Ajaran tidak ditemukan.',
+                'data' => []
+            ], 404);
+        }
+
+        // Ambil semua dosen beserta relasi yang dibutuhkan
+        $dosens = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
+            ->orderBy('name', 'asc') // Urutkan berdasarkan nama dosen
+            ->get();
+
+        // Ambil semua program studi untuk iterasi
+        $programStudis = ProgramStudi::select(['id', 'nama'])->get();
+
+        $maksimalSksMengajarDefault = 16; // Batas SKS mengajar normal
+
+        $laporanData = $dosens->map(function ($dosen) use ($id_tahun_ajaran, $programStudis, $maksimalSksMengajarDefault) {
+            $konversi_sks_jabatan = 0;
+            $nama_jabatan_struktural = null;
+
+            if ($dosen->jabatanStruktural) {
+                $konversi_sks_jabatan = (int)$dosen->jabatanStruktural->konversi_sks;
+                $nama_jabatan_struktural = $dosen->jabatanStruktural->nama;
+            }
+
+            $maxAjarSks = $maksimalSksMengajarDefault - $konversi_sks_jabatan;
+            // Pastikan maxAjarSks tidak negatif
+            $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks;
+
+            // Hitung total SKS mengajar pada tahun ajaran ini
+            // Menggunakan method yang sudah ada di model Dosen
+            $totalAjarSksKeseluruhan = $dosen->getTotalSksMengajarPadaTahunAjaran((int)$id_tahun_ajaran);
+
+            // Hitung total SKS mengajar per program studi
+            $totalAjarPerProdi = [];
+            foreach ($programStudis as $prodi) {
+                $sksDiProdiIni = $dosen->plottinganPengajarans()
+                    ->whereHas('mappingKelasMatakuliah', function ($queryMKM) use ($id_tahun_ajaran, $prodi) {
+                        $queryMKM->where('id_tahun_ajaran', $id_tahun_ajaran)
+                            ->where('id_program_studi', $prodi->id);
+                    })
+                    ->sum('beban_sks');
+
+                // Hanya tambahkan ke array jika SKS > 0 untuk menjaga output tetap bersih
+                if ($sksDiProdiIni > 0) {
+                    $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
+                }
+            }
+
+            return [
+                'kode_dosen'        => $dosen->lecturer_code,
+                'nama_dosen'        => $dosen->name,
+                'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null,
+                'jfa'               => $dosen->jabatan_fungsional_akademik,
+                'jabatan_struktural' => $nama_jabatan_struktural,
+                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan, // Tambahan: SKS dari jabatan
+                'max_ajar_sks'      => $maxAjarSks,
+                'status_pegawai'    => $dosen->status_pegawai,
+                'total_ajar_per_prodi' => !empty($totalAjarPerProdi) ? $totalAjarPerProdi : null, // Menampilkan SKS per prodi
+                'total_ajar_sks_keseluruhan' => $totalAjarSksKeseluruhan,
+                'sisa_sks_mengajar' => $maxAjarSks - $totalAjarSksKeseluruhan, // Tambahan: Sisa SKS yang bisa diambil
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Laporan Beban SKS Dosen untuk Tahun Ajaran ' . $tahunAjaran->tahun_ajaran . ' (' . $tahunAjaran->semester . ') berhasil dimuat.',
+            'data' => $laporanData
+        ]);
     }
 
     /**
