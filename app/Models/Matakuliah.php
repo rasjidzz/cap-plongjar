@@ -13,10 +13,13 @@ class Matakuliah extends Model
         'nama_matakuliah',
         'kode_matkul',
         'sks',
+        'hour_target',
         'praktikum',
         'id_pic',
         'mandatory_status',
-        'mode_perkuliahan'
+        'mode_perkuliahan',
+        'matakuliah_eksepsi',
+        'matakuliah_eksepsi'
     ];
 
     // Relasi dengan model Pic

@@ -78,14 +78,16 @@ Route::prefix('masterdata')->group(function () {
         Route::get('/programstudi', [ProgramStudiController::class, 'index']);
         Route::get('/kelompokkeahlian', [KelompokKeahlianController::class, 'index']);
         Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul']);
+        Route::get('/mapping-kelas-matakuliah/matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatakuliahByIdMatakuliahIdTahunAjaranandIdProgramStudi']);
         Route::get('/mapping-kelas-matakuliah/by-matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahunajaran}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulByIdMatkulandIdTahunAjaran']);
 
         // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
         Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
+        Route::post('/koordinator-matakuliah/assign-by-program-studi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudi']); // -> Untuk assign koordinator per program studi
     });
 
     // ROLE PROGRAM STUDI ONLY (SUPER_ADMIN AND PROGRAM_STUDI)
-    Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
         Route::apiResource('matakuliahs', MatakuliahController::class);
         Route::apiResource('tahunajarans', TahunAjaranController::class);
         Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class);
@@ -99,7 +101,7 @@ Route::prefix('masterdata')->group(function () {
     });
 
     // MAPPING KELAS MATAKULIAH MANAGEMENT (SUPER_ADMIN, PROGRAM_STUDI)
-    Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class)->middleware('role:Superadmin,ProgramStudi');
+    // Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class)->middleware('role:Superadmin,ProgramStudi');
     // Specific read operation accessible by Superadmin, ProgramStudi, KelompokKeahlian
     Route::get('/mappingkelasmatakuliahs/by-matakuliah/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul'])
         ->middleware('role:Superadmin,ProgramStudi,KelompokKeahlian')
@@ -110,7 +112,10 @@ Route::prefix('masterdata')->group(function () {
 Route::prefix('plottingan-pengajaran')->group(function () {
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
         Route::apiResource('start-plottingan-pengajaran', PlottinganPengajaranController::class);
+        Route::get('/get-hasil-plottingan-pengajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'getHasilPlottinganPengajaranByTahunAjaranId']);
+        Route::get('/dosen/laporan-beban-sks/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getLaporanBebanSksDosen']);
     });
+    Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
 });
 
 // Route::prefix('matakuliah')->group(function () {});

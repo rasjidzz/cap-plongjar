@@ -7,28 +7,67 @@ use App\Models\User;
 use App\Models\User_Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    // public function register(Request $request)
+    // {
+    //     $validated = $request->validate([
+    //         'name' => 'required|string|max:255',
+    //         'email' => 'required|string|email|max:255|unique:users,email',
+    //         'nip' => 'required|string|max:255|unique:users,nip', // Aturan untuk NIP
+    //         'password' => 'required|string|min:6', // Anda mungkin ingin menambahkan konfirmasi password di sini: 'password' => 'required|string|min:6|confirmed'
+    //     ]);
+    //     $user = User::create([
+    //         'name' => $validated['name'],
+    //         'email' => $validated['email'],
+    //         'nip' => $validated['nip'], // Menyimpan NIP
+    //         'password' => bcrypt($validated['password']),
+    //     ]);
+
+    //     return response()->json([
+    //         'message' => 'Registered Successfully',
+    //         'status_code' => 201
+    //     ], 201);
+    // }
     public function register(Request $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'nip' => 'required|string|max:255|unique:users,nip', // Aturan untuk NIP
-            'password' => 'required|string|min:6', // Anda mungkin ingin menambahkan konfirmasi password di sini: 'password' => 'required|string|min:6|confirmed'
-        ]);
-        $user = User::create([
-            'name' => $validated['name'],
-            'email' => $validated['email'],
-            'nip' => $validated['nip'], // Menyimpan NIP
-            'password' => bcrypt($validated['password']),
-        ]);
+        try {
+            // Validasi input
+            $validatedData = $request->validate([
+                'name' => 'required|string|max:255',
+                'email' => 'required|string|email|max:255|unique:users,email',
+                'nip' => 'required|string|max:255|unique:users,nip', // Aturan untuk NIP
+                'password' => 'required|string|min:6', // Menambahkan 'confirmed' untuk validasi password_confirmation
+            ]);
 
-        return response()->json([
-            'message' => 'Registered Successfully',
-            'status_code' => 201
-        ], 201);
+            // Membuat user baru
+            $user = User::create([
+                'name' => $validatedData['name'],
+                'email' => $validatedData['email'],
+                'nip' => $validatedData['nip'],
+                'password' => Hash::make($validatedData['password']), // Menggunakan Hash::make()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Registrasi berhasil.',
+                'user' => $user, // Mengembalikan data user yang baru dibuat (tanpa password)
+            ], 201); // HTTP 201 Created
+
+        } catch (ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(), // Pesan umum dari exception validasi
+                'errors' => $e->errors()      // Detail error per field
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Registrasi gagal karena terjadi kesalahan pada server.',
+            ], 500); // HTTP 500 Internal Server Error
+        }
     }
     // public function login(Request $request)
     // {
