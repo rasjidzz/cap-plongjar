@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dosen;
+use App\Models\PlottinganPengajaran;
 use App\Models\ProgramStudi;
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Pagination\LengthAwarePaginator;
 // use App\Http\Controllers\Log;
 
 class DosenController extends Controller
@@ -462,6 +464,102 @@ class DosenController extends Controller
             'success' => true,
             'message' => 'Laporan Beban SKS Dosen untuk Tahun Ajaran ' . $tahunAjaran->tahun_ajaran . ' (' . $tahunAjaran->semester . ') berhasil dimuat.',
             'data' => $paginatedResponse // Mengembalikan data yang sudah dipaginasi
+        ]);
+    }
+
+    public function getRiwayatPengajaran(Request $request, $id_dosen)
+    {
+        // 1. Validasi apakah dosen ada
+        $dosen = Dosen::find($id_dosen);
+        if (!$dosen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dosen tidak ditemukan.',
+            ], 404);
+        }
+
+        // 2. Ambil semua plottingan untuk dosen ini dengan relasi yang dibutuhkan
+        // $riwayatPlottingan = PlottinganPengajaran::with([
+        //     'mappingKelasMatakuliah.matakuliah.pic',
+        //     'mappingKelasMatakuliah.tahunAjaran'
+        // ])
+        //     ->where('id_dosen', $id_dosen)
+        //     ->get();
+
+        // // 3. Transformasi data ke format yang diinginkan
+        // $formattedRiwayat = $riwayatPlottingan->map(function ($plot) {
+        //     $matakuliah = $plot->mappingKelasMatakuliah?->matakuliah;
+        //     $tahunAjaran = $plot->mappingKelasMatakuliah?->tahunAjaran;
+
+        //     return [
+        //         'nama_matakuliah'   => $matakuliah?->nama_matakuliah,
+        //         'pic_matakuliah'    => $matakuliah?->pic?->name,
+        //         'online_onsite'     => $matakuliah?->mode_perkuliahan,
+        //         'kelas'             => $plot->mappingKelasMatakuliah?->nama_kelas,
+        //         'kuota'             => $plot->mappingKelasMatakuliah?->kuota,
+        //         'periode'           => $tahunAjaran ? ($tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester) : null,
+        //     ];
+        // });
+
+        // 4. Kirim respons
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Riwayat pengajaran untuk dosen ' . $dosen->name . ' berhasil dimuat.',
+        //     'data' => $formattedRiwayat
+        // ]);
+
+        // Ambil parameter pencarian dan paginasi
+        $searchTerm = $request->query('search', '');
+        $perPage = $request->query('per_page', 15);
+
+        // 2. Mulai query untuk plottingan dosen ini
+        $query = PlottinganPengajaran::with([
+            'mappingKelasMatakuliah.matakuliah.pic',
+            'mappingKelasMatakuliah.tahunAjaran'
+        ])
+            ->where('id_dosen', $id_dosen);
+
+        // Tambahkan kondisi pencarian jika ada search term
+        if (!empty($searchTerm)) {
+            $query->whereHas('mappingKelasMatakuliah.matakuliah', function ($matakuliahQuery) use ($searchTerm) {
+                $matakuliahQuery->where('nama_matakuliah', 'LIKE', "%{$searchTerm}%")
+                    ->orWhere('kode_matkul', 'LIKE', "%{$searchTerm}%");
+            });
+        }
+
+        // Lakukan paginasi
+        $riwayatPlottingan = $query->latest()->paginate($perPage);
+
+        // 3. Transformasi data ke format yang diinginkan
+        $formattedRiwayat = $riwayatPlottingan->getCollection()->map(function ($plot) {
+            // Menggunakan null-safe operator (?->) untuk keamanan jika ada relasi yang null
+            $matakuliah = $plot->mappingKelasMatakuliah?->matakuliah;
+            $tahunAjaran = $plot->mappingKelasMatakuliah?->tahunAjaran;
+
+            return [
+                'nama_matakuliah'   => $matakuliah?->nama_matakuliah,
+                'pic_matakuliah'    => $matakuliah?->pic?->name,
+                'online_onsite'     => $matakuliah?->mode_perkuliahan,
+                'kelas'             => $plot->mappingKelasMatakuliah?->nama_kelas,
+                'kuota'             => $plot->mappingKelasMatakuliah?->kuota,
+                'periode'           => $tahunAjaran ? ($tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester) : null,
+            ];
+        });
+
+        // Buat instance paginator baru dengan data yang sudah ditransformasi
+        $paginatedFormattedData = new LengthAwarePaginator(
+            $formattedRiwayat,
+            $riwayatPlottingan->total(),
+            $riwayatPlottingan->perPage(),
+            $riwayatPlottingan->currentPage(),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+        // 4. Kirim respons
+        return response()->json([
+            'success' => true,
+            'message' => 'Riwayat pengajaran untuk dosen ' . $dosen->name . ' berhasil dimuat.',
+            'data' => $paginatedFormattedData
         ]);
     }
     /**
