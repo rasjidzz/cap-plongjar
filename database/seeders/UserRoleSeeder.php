@@ -136,5 +136,15 @@ class UserRoleSeeder extends Seeder
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+
+        // Owala - Admin Prodi Informatika
+        User_Role::create([
+            'user_id' => 7,
+            'role_id' => 2,
+            'roleable_id' => 1,
+            'roleable_type' => "App\\Models\\ProgramStudi",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
     }
 }

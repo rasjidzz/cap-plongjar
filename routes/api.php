@@ -93,11 +93,15 @@ Route::prefix('masterdata')->group(function () {
         Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class);
     });
 
-    // JABATAN STRUKTURAL MANAGEMENT (SUPER_ADMIN ONLY)
     Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
+        // JABATAN STRUKTURAL MANAGEMENT (SUPER_ADMIN ONLY)
         Route::apiResource('jabatanstruktural', JabatanStrukturalController::class);
         Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']);
         Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']);
+        Route::apiResource('/program-studi', ProgramStudiController::class);
+
+        // Tahun Ajaran Management (SUPER_ADMIN ONLY)
+        Route::post('/tahun-ajaran/{id_tahun_ajaran}/set-active', [TahunAjaranController::class, 'setActiveTahunAjaran']);
     });
 
     // MAPPING KELAS MATAKULIAH MANAGEMENT (SUPER_ADMIN, PROGRAM_STUDI)
@@ -106,6 +110,12 @@ Route::prefix('masterdata')->group(function () {
     Route::get('/mappingkelasmatakuliahs/by-matakuliah/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul'])
         ->middleware('role:Superadmin,ProgramStudi,KelompokKeahlian')
         ->name('mappingkelasmatakuliahs.byMatakuliah');
+
+    // GET Active Tahun Ajaran
+    Route::middleware('auth:sanctum')->group(function () {
+        // ... route lain
+        Route::get('/tahun-ajaran/aktif', [TahunAjaranController::class, 'getActiveTahunAjaran'])->name('tahunAjaran.getActive');
+    });
 });
 // 3. Master Data
 
@@ -114,6 +124,8 @@ Route::prefix('plottingan-pengajaran')->group(function () {
         Route::apiResource('start-plottingan-pengajaran', PlottinganPengajaranController::class);
         Route::get('/get-hasil-plottingan-pengajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'getHasilPlottinganPengajaranByTahunAjaranId']);
         Route::get('/dosen/laporan-beban-sks/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getLaporanBebanSksDosen']);
+        Route::get('/dosen/{id_dosen}/riwayat-pengajaran', [DosenController::class, 'getRiwayatPengajaran']);
+        Route::get('/dosen/{id_dosen}/beban-sks-aktif', [DosenController::class, 'getBebanSksDosenByIdDosenandActiveTahunAjaran']);
     });
     Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
 });

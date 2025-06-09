@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\TahunAjaran;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 class TahunAjaranController extends Controller
@@ -57,6 +58,59 @@ class TahunAjaranController extends Controller
             'message' => 'Tahun Ajaran berhasil ditambahkan.',
             'data' => $tahunAjaran
         ], 201);
+    }
+    public function setActiveTahunAjaran($id_tahun_ajaran)
+    {
+        // 1. Cari tahun ajaran yang akan diaktifkan
+        $tahunAjaranToActivate = TahunAjaran::find($id_tahun_ajaran);
+
+        // 2. Validasi jika tahun ajaran tidak ditemukan
+        if (!$tahunAjaranToActivate) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tahun Ajaran dengan ID ' . $id_tahun_ajaran . ' tidak ditemukan.',
+            ], 404); // 404 Not Found
+        }
+
+        try {
+            DB::transaction(function () use ($tahunAjaranToActivate) {
+                TahunAjaran::query()->update(['status' => false]);
+
+                $tahunAjaranToActivate->status = true;
+                $tahunAjaranToActivate->save();
+            });
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server saat memperbarui status tahun ajaran.',
+            ], 500);
+        }
+
+        // 4. Kembalikan respons sukses
+        return response()->json([
+            'success' => true,
+            'message' => 'Status Tahun Ajaran berhasil diperbarui. ' . $tahunAjaranToActivate->tahun_ajaran . ' (' . $tahunAjaranToActivate->semester . ') sekarang aktif.',
+            'data' => $tahunAjaranToActivate
+        ], 200);
+    }
+
+    public function getActiveTahunAjaran()
+    {
+        // Menggunakan scope 'active' yang sudah kita buat di model
+        $activeTahunAjaran = TahunAjaran::where('status', true)->first();
+
+        if (!$activeTahunAjaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada tahun ajaran yang sedang aktif saat ini.',
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Tahun ajaran aktif berhasil dimuat.',
+            'data' => $activeTahunAjaran
+        ]);
     }
 
     /**
