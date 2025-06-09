@@ -7,6 +7,9 @@ use Illuminate\Database\Eloquent\Model;
 
 class ProgramStudi extends Model
 {
+    protected $fillable = [
+        'nama',
+    ];
     /** @use HasFactory<\Database\Factories\ProgramStudiFactory> */
     use HasFactory;
     public function pic()

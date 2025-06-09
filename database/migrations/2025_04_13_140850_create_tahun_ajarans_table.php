@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('tahun_ajaran');
             $table->enum('semester', ['ganjil', 'genap']);
+            $table->boolean('status')->default(false);
             $table->timestamps();
         });
     }

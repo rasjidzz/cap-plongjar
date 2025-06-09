@@ -547,6 +547,8 @@ class PlottinganPengajaranController extends Controller
         return Excel::download(new PlottinganPengajaranExport((int)$id_tahun_ajaran), $fileName);
     }
 
+    // public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen) {}
+
     /**
      * Display the specified resource.
      */

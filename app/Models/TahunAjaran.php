@@ -9,5 +9,5 @@ class TahunAjaran extends Model
 {
     /** @use HasFactory<\Database\Factories\TahunAjaranFactory> */
     use HasFactory;
-    protected $fillable = ['tahun_ajaran', 'semester'];
+    protected $fillable = ['tahun_ajaran', 'semester', 'active'];
 }
