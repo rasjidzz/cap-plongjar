@@ -70,6 +70,9 @@ Route::prefix('masterdata')->group(function () {
         Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
         Route::get('/getAllDosen', [DosenController::class, 'getAllDosen']);
         Route::get('/getAllDosen/{id_kk}', [DosenController::class, 'getAllDosenByKKId']);
+        Route::get('/dosens/by-kelompok-keahlian/{id_kk}', [DosenController::class, 'getAllDosenByKKId']);
+        Route::get('/dosens/tanpa-jabatan-struktural', [DosenController::class, 'getAllDosenTanpaJabatanStruktural']);
+        Route::get('/dosens/by-jabatan-struktural/{id_jabatan_struktural}', [DosenController::class, 'getAllDosenByJabatanStrukturalId']);
         Route::apiResource('dosens', DosenController::class);
         Route::get('/getDosenDetail/{id_dosen}', [DosenController::class, 'getDosenDetailData']);
 

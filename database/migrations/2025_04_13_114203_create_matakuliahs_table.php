@@ -24,6 +24,7 @@ return new class extends Migration
             $table->enum('matakuliah_eksepsi', ['ya', 'tidak']);
             $table->enum('tingkat_matakuliah', ['Tingkat 1', 'Tingkat 2', 'Tingkat 3', 'Tingkat 4']);
             $table->timestamps();
+            $table->softDeletes();
 
             $table->foreign('id_pic')->references('id')->on('pics')->onDelete('cascade');
         });

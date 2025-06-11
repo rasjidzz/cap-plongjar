@@ -142,6 +142,27 @@ class TahunAjaranController extends Controller
      */
     public function destroy(TahunAjaran $tahunAjaran)
     {
-        //
+        // Validasi: Jangan biarkan user menghapus tahun ajaran yang sedang aktif.
+        if ($tahunAjaran->status === true) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak dapat menghapus tahun ajaran yang sedang aktif. Silakan aktifkan tahun ajaran lain terlebih dahulu.'
+            ], 422);
+        }
+
+        try {
+            $tahunAjaran->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tahun Ajaran berhasil dihapus (soft delete).'
+            ], 200); // 200 OK
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus Tahun Ajaran karena terjadi kesalahan pada server.'
+            ], 500);
+        }
     }
 }
