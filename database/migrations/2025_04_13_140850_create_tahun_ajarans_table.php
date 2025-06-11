@@ -17,6 +17,7 @@ return new class extends Migration
             $table->enum('semester', ['ganjil', 'genap']);
             $table->boolean('status')->default(false);
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

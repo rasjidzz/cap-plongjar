@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dosen;
+use App\Models\JabatanStruktural;
 use App\Models\PlottinganPengajaran;
 use App\Models\ProgramStudi;
 use App\Models\TahunAjaran;
@@ -58,6 +59,88 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
+    // public function getAllDosenByJabatanStrukturalId($id_kk)
+    // {
+    //     $data = Dosen::with('kelompokKeahlian:id,nama')
+    //         ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+    //         ->where('id_kelompok_keahlian', $id_kk)
+    //         ->get();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'List All Dosen Data (id, name, lecturer_code, nip, kelompok_keahlian, status_pegawai)',
+    //         'data' => $data
+    //     ]);
+    // }
+    public function getAllDosenByJabatanStrukturalId(Request $request, $id_jabatan_struktural)
+    {
+        $jabatanStruktural = JabatanStruktural::find($id_jabatan_struktural);
+        if (!$jabatanStruktural) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Jabatan Struktural tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil parameter pencarian dan paginasi dari query string URL
+        $searchNama = $request->query('nama', '');
+        $searchNip = $request->query('nip', '');
+        $perPage = $request->query('per_page', 9);
+
+        // Mulai query dengan memfilter dosen yang memiliki jabatan struktural tertentu
+        $query = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
+            ->where('id_jabatan_struktural', $id_jabatan_struktural);
+
+        // Terapkan kondisi pencarian untuk nama jika ada
+        $query->when($searchNama, function ($q) use ($searchNama) {
+            return $q->where('name', 'like', "%{$searchNama}%");
+        });
+
+        // Terapkan kondisi pencarian untuk NIP jika ada
+        $query->when($searchNip, function ($q) use ($searchNip) {
+            return $q->where('nip', 'like', "%{$searchNip}%");
+        });
+
+        // Urutkan hasil (opsional) dan lakukan paginasi
+        $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar dosen untuk jabatan "' . $jabatanStruktural->nama . '" berhasil dimuat.',
+            'data' => $dosens
+        ]);
+    }
+
+    public function getAllDosenTanpaJabatanStruktural(Request $request)
+    {
+        // Ambil parameter pencarian dan paginasi dari query string URL
+        $searchNama = $request->query('nama', '');
+        $searchNip = $request->query('nip', '');
+        $perPage = $request->query('per_page', 9);
+
+        // Mulai query dengan memfilter dosen yang id_jabatan_struktural-nya NULL
+        $query = Dosen::with(['kelompokKeahlian:id,nama']) // Eager load relasi yang dibutuhkan
+            ->whereNull('id_jabatan_struktural');
+
+        // Terapkan kondisi pencarian untuk nama jika ada
+        $query->when($searchNama, function ($q) use ($searchNama) {
+            return $q->where('name', 'like', "%{$searchNama}%");
+        });
+
+        // Terapkan kondisi pencarian untuk NIP jika ada
+        $query->when($searchNip, function ($q) use ($searchNip) {
+            return $q->where('nip', 'like', "%{$searchNip}%");
+        });
+
+        // Urutkan hasil (opsional) dan lakukan paginasi
+        $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar dosen tanpa jabatan struktural berhasil dimuat.',
+            'data' => $dosens
+        ]);
+    }
+
 
     /**
      * Show the form for creating a new resource.

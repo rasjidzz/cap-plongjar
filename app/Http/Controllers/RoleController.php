@@ -16,22 +16,88 @@ class RoleController extends Controller
         $this->user_role_model = $userRole;
         $this->user_model = $user;
     }
-    public function getAllUser()
+    // public function getAllUser()
+    // {
+    //     return User::all();
+    // }
+    public function getAllUser(Request $request)
     {
-        return User::all();
+        // Ambil parameter dari query string URL
+        $searchNama = $request->query('nama', '');
+        $searchNip = $request->query('nip', '');
+        $perPage = $request->query('per_page', 9); // Default 15 item per halaman
+
+        // Mulai membangun query dengan Eloquent
+        $query = User::query();
+
+        // Terapkan kondisi pencarian untuk nama jika parameter 'nama' ada
+        $query->when($searchNama, function ($q) use ($searchNama) {
+            return $q->where('name', 'like', "%{$searchNama}%");
+        });
+
+        // Terapkan kondisi pencarian untuk NIP jika parameter 'nip' ada
+        $query->when($searchNip, function ($q) use ($searchNip) {
+            return $q->where('nip', 'like', "%{$searchNip}%");
+        });
+
+        // Urutkan hasil (opsional) dan lakukan paginasi
+        $users = $query->orderBy('name', 'asc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar pengguna berhasil dimuat.',
+            'data' => $users
+        ]);
     }
     public function getAllRoles()
     {
         return Role::all();
     }
-    public function getAllUserByRole($id_role)
+    public function getAllUserByRole($id_role, Request $request)
     {
-        $userData = $this->user_model->getAllUserByRoleId($id_role);
+        // $userData = $this->user_model->getAllUserByRoleId($id_role);
+
+        // return response()->json([
+        //     'message' => 'All User Data by Role Fetched Successfully',
+        //     'data' => $userData
+        // ], 201);
+
+        $roleExists = Role::find($id_role);
+        if (!$roleExists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Role tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil parameter pencarian dan paginasi dari query string URL
+        $searchNama = $request->query('nama', '');
+        $searchNip = $request->query('nip', '');
+        $perPage = $request->query('per_page', 9);
+
+        // Mulai query dengan memfilter user yang memiliki role tertentu
+        $query = User::whereHas('roles', function ($q) use ($id_role) {
+            $q->where('roles.id', $id_role); // Lebih spesifik dengan nama tabel 'roles.id'
+        });
+
+        // Terapkan kondisi pencarian untuk nama jika ada
+        $query->when($searchNama, function ($q) use ($searchNama) {
+            return $q->where('name', 'like', "%{$searchNama}%");
+        });
+
+        // Terapkan kondisi pencarian untuk NIP jika ada
+        $query->when($searchNip, function ($q) use ($searchNip) {
+            return $q->where('nip', 'like', "%{$searchNip}%");
+        });
+
+        // Urutkan hasil (opsional) dan lakukan paginasi
+        $users = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json([
-            'message' => 'All User Data by Role Fetched Successfully',
-            'data' => $userData
-        ], 201);
+            'success' => true,
+            'message' => 'Daftar pengguna untuk role "' . $roleExists->name . '" berhasil dimuat.',
+            'data' => $users
+        ]);
     }
     // public function getAllAssignedUserRole()
     // {
