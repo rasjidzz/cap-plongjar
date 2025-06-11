@@ -11,16 +11,42 @@ class MatakuliahController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    // public function index()
+    // {
+    //     $data = Matakuliah::with('pic')->get();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'List All Matakuliah',
+    //         'data' => $data
+    //     ]);
+    // }
+
+    public function index(Request $request)
     {
-        $data = Matakuliah::with('pic')->get();
+        $searchNamaMatakuliah = $request->query('nama_matakuliah', '');
+        $searchPic = $request->query('pic', '');
+        $perPage = $request->query('per_page', 9); // Default 15 item per halaman
+
+        $query = Matakuliah::query()->with('pic'); // Eager load relasi 'pic' untuk efisiensi
+
+        $query->when($searchNamaMatakuliah, function ($q) use ($searchNamaMatakuliah) {
+            return $q->where('nama_matakuliah', 'like', "%{$searchNamaMatakuliah}%");
+        });
+
+        $query->when($searchPic, function ($q) use ($searchPic) {
+            return $q->whereHas('pic', function ($picQuery) use ($searchPic) {
+                $picQuery->where('name', 'like', "%{$searchPic}%");
+            });
+        });
+
+        $data = $query->orderBy('nama_matakuliah', 'asc')->paginate($perPage);
+
         return response()->json([
             'success' => true,
-            'message' => 'List All Matakuliah',
+            'message' => 'Daftar Mata Kuliah berhasil dimuat.',
             'data' => $data
         ]);
     }
-
     /**
      * Show the form for creating a new resource.
      */
