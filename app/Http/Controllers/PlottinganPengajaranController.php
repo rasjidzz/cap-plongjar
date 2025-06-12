@@ -14,6 +14,7 @@ use App\Models\ProgramStudi;
 use App\Models\TahunAjaran;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PlottinganPengajaranExport;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class PlottinganPengajaranController extends Controller
 {
@@ -545,6 +546,173 @@ class PlottinganPengajaranController extends Controller
         $fileName = 'hasil_plottingan_pengajaran_' . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_' . $tahunAjaran->semester . '.xlsx';
 
         return Excel::download(new PlottinganPengajaranExport((int)$id_tahun_ajaran), $fileName);
+    }
+
+    // public function getHasilPlottinganByProdiDanTahunAjaran($id_tahun_ajaran, $id_program_studi)
+    // {
+    //     // 1. Validasi apakah parameter ada
+    //     $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+    //     if (!$tahunAjaran) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Tahun Ajaran tidak ditemukan.',
+    //         ], 404);
+    //     }
+
+    //     $programStudi = ProgramStudi::find($id_program_studi);
+    //     if (!$programStudi) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Program Studi tidak ditemukan.',
+    //         ], 404);
+    //     }
+
+    //     // 2. Ambil data plottingan dengan filter dan relasi
+    //     $plottinganItems = PlottinganPengajaran::with([
+    //         'dosen:id,name,lecturer_code',
+    //         'mappingKelasMatakuliah' => function ($query) {
+    //             $query->with([
+    //                 'matakuliah' => function ($matakuliahQuery) {
+    //                     $matakuliahQuery->with('pic:id,name');
+    //                 },
+    //                 'tahunAjaran:id,tahun_ajaran,semester', // Pastikan relasi tahunAjaran di-load
+    //                 'koordinatorMatakuliah' => function ($kmQuery) {
+    //                     $kmQuery->with('dosen:id,name,lecturer_code');
+    //                 }
+    //             ]);
+    //         }
+    //     ])
+    //         ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran, $id_program_studi) {
+    //             // Filter utama berdasarkan tahun ajaran dan program studi
+    //             $query->where('id_tahun_ajaran', $id_tahun_ajaran)
+    //                 ->where('id_program_studi', $id_program_studi);
+    //         })
+    //         ->get();
+
+    //     // 3. Transformasi data ke format yang diinginkan
+    //     $formattedData = $plottinganItems->map(function ($plot) {
+    //         $mkm = $plot->mappingKelasMatakuliah;
+    //         $matakuliah = $mkm ? $mkm->matakuliah : null;
+    //         $dosenPengajar = $plot->dosen;
+    //         $dosenKoordinator = $mkm?->koordinatorMatakuliah?->dosen;
+    //         $tahunAjaranInfo = $mkm ? $mkm->tahunAjaran : null;
+
+    //         return [
+    //             'id_plottingan'             => $plot->id,
+    //             'id_mapping_kelas'          => $mkm?->id,
+    //             'nama_matakuliah'           => $matakuliah?->nama_matakuliah,
+    //             'kode_matakuliah'           => $matakuliah?->kode_matkul,
+    //             'pic_matakuliah'            => $matakuliah?->pic?->name,
+    //             'sks_matakuliah'            => $matakuliah?->sks,
+    //             'nama_kelas'                => $mkm?->nama_kelas,
+    //             'dosen_pengajar'            => $dosenPengajar?->name,
+    //             'kode_dosen_pengajar'       => $dosenPengajar?->lecturer_code,
+    //             'beban_sks_dosen'           => $plot->beban_sks,
+    //             'koordinator_matakuliah'    => $dosenKoordinator?->name,
+    //             'kode_koordinator'          => $dosenKoordinator?->lecturer_code,
+    //             'tahun_ajaran'              => $tahunAjaranInfo ? ($tahunAjaranInfo->tahun_ajaran . ' - ' . $tahunAjaranInfo->semester) : null,
+    //             'mandatory_status'          => $matakuliah?->mandatory_status,
+    //             'tingkat_matakuliah'        => $matakuliah?->tingkat_matakuliah,
+    //             'hour_target'               => $matakuliah?->hour_target,
+    //             'mk_eksepsi'                => $matakuliah?->matakuliah_eksepsi,
+    //         ];
+    //     });
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Hasil Plottingan Pengajaran untuk Program Studi "' . $programStudi->name . '" pada Tahun Ajaran "' . $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester . '" berhasil dimuat.',
+    //         'data' => $formattedData
+    //     ]);
+    // }
+
+    public function getHasilPlottinganByProdiDanTahunAjaran(Request $request, $id_tahun_ajaran, $id_program_studi)
+    {
+        // 1. Validasi apakah parameter ada
+        $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+        if (!$tahunAjaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tahun Ajaran tidak ditemukan.',
+            ], 404);
+        }
+
+        $programStudi = ProgramStudi::find($id_program_studi);
+        if (!$programStudi) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Program Studi tidak ditemukan.',
+            ], 404);
+        }
+
+        // Ambil parameter paginasi
+        $perPage = $request->query('per_page', 12);
+
+        // 2. Ambil data plottingan dengan filter, relasi, dan paginasi
+        $plottinganItems = PlottinganPengajaran::with([
+            'dosen:id,name,lecturer_code',
+            'mappingKelasMatakuliah' => function ($query) {
+                $query->with([
+                    'matakuliah' => function ($matakuliahQuery) {
+                        $matakuliahQuery->with('pic:id,name');
+                    },
+                    'tahunAjaran:id,tahun_ajaran,semester',
+                    'koordinatorMatakuliah' => function ($kmQuery) {
+                        $kmQuery->with('dosen:id,name,lecturer_code');
+                    }
+                ]);
+            }
+        ])
+            ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran, $id_program_studi) {
+                // Filter utama berdasarkan tahun ajaran dan program studi
+                $query->where('id_tahun_ajaran', $id_tahun_ajaran)
+                    ->where('id_program_studi', $id_program_studi);
+            })
+            ->paginate($perPage);
+
+        // 3. Transformasi data pada koleksi halaman saat ini
+        $formattedData = $plottinganItems->getCollection()->map(function ($plot) {
+            $mkm = $plot->mappingKelasMatakuliah;
+            $matakuliah = $mkm ? $mkm->matakuliah : null;
+            $dosenPengajar = $plot->dosen;
+            $dosenKoordinator = $mkm?->koordinatorMatakuliah?->dosen;
+            $tahunAjaranInfo = $mkm ? $mkm->tahunAjaran : null;
+
+            return [
+                'id_plottingan'             => $plot->id,
+                'id_mapping_kelas'          => $mkm?->id,
+                'nama_matakuliah'           => $matakuliah?->nama_matakuliah,
+                'kode_matakuliah'           => $matakuliah?->kode_matkul,
+                'pic_matakuliah'            => $matakuliah?->pic?->name,
+                'sks_matakuliah'            => $matakuliah?->sks,
+                'nama_kelas'                => $mkm?->nama_kelas,
+                'dosen_pengajar'            => $dosenPengajar?->name,
+                'kode_dosen_pengajar'       => $dosenPengajar?->lecturer_code,
+                'beban_sks_dosen'           => $plot->beban_sks,
+                'koordinator_matakuliah'    => $dosenKoordinator?->name,
+                'kode_koordinator'          => $dosenKoordinator?->lecturer_code,
+                'tahun_ajaran'              => $tahunAjaranInfo ? ($tahunAjaranInfo->tahun_ajaran . ' - ' . $tahunAjaranInfo->semester) : null,
+                'mandatory_status'          => $matakuliah?->mandatory_status,
+                'tingkat_matakuliah'        => $matakuliah?->tingkat_matakuliah,
+                'hour_target'               => $matakuliah?->hour_target,
+                'mk_eksepsi'                => $matakuliah?->matakuliah_eksepsi,
+            ];
+        });
+
+        // Buat instance Paginator baru dengan data yang sudah ditransformasi
+        $paginatedResponse = new LengthAwarePaginator(
+            $formattedData,
+            $plottinganItems->total(),
+            $plottinganItems->perPage(),
+            $plottinganItems->currentPage(),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
+
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Hasil Plottingan Pengajaran untuk Program Studi "' . $programStudi->nama . '" pada Tahun Ajaran "' . $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester . '" berhasil dimuat.',
+            'data' => $paginatedResponse
+        ]);
     }
 
     // public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen) {}
