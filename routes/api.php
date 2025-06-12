@@ -54,6 +54,7 @@ Route::prefix('roles')->group(function () {
         Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']);
         Route::post('/assignRole', [RoleController::class, 'assignRole']);
         Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
+        Route::post('/assign-scoped-role', [RoleController::class, 'assignScopedRole']);
     });
 });
 // 2. Role Management Stuff
@@ -130,7 +131,11 @@ Route::prefix('plottingan-pengajaran')->group(function () {
         Route::get('/dosen/{id_dosen}/riwayat-pengajaran', [DosenController::class, 'getRiwayatPengajaran']);
         Route::get('/dosen/{id_dosen}/beban-sks-aktif', [DosenController::class, 'getBebanSksDosenByIdDosenandActiveTahunAjaran']);
     });
+    Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab'])->group(function () {
+        Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
+    });
     Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
+    Route::get('/export/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'exportHasilPlottinganByProdiDanTahunAjaranToExcel']);
 });
 
 // Route::prefix('matakuliah')->group(function () {});
@@ -138,14 +143,14 @@ Route::prefix('plottingan-pengajaran')->group(function () {
 Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     $data = [
         'user data' => $request->user(),
-        'role ' => $request->user()->roles[0]->name,
+        'role ' => $request->user()->roles()
     ];
     return $data;
 });
 
-Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-    return $request->user();
-});
+// Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
+//     return $request->user();
+// });
 
 
 

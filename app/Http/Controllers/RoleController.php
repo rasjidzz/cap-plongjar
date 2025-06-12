@@ -2,10 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KelompokKeahlian;
+use App\Models\ProgramStudi;
 use App\Models\Role;
 use App\Models\User;
 use App\Models\User_Role;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
 {
@@ -127,8 +130,10 @@ class RoleController extends Controller
         $request->validate([
             'user_id' => 'required|integer',
             'role_id' => 'required|integer',
-            'roleable_id' => 'required|integer',
-            'roleable_type' => 'required|string'
+            // 'roleable_id' => 'required|integer',
+            // 'roleable_type' => 'required|string'
+            'roleable_id' => 'nullable|integer',
+            'roleable_type' => 'nullable|string'
         ]);
 
         $user = User::find($request->user_id);
@@ -166,6 +171,61 @@ class RoleController extends Controller
         return response()->json([
             'message' => 'User Assigned to Role Successfully'
         ]);
+    }
+    public function assignScopedRole(Request $request)
+    {
+        $validatedData = $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'role_id' => ['required', 'integer', Rule::in([2, 3])],
+            'roleable_id' => 'required|integer',
+        ], [
+            'role_id.in' => 'Role yang dipilih tidak valid untuk jenis assignment ini. Hanya Program Studi atau Kelompok Keahlian yang diizinkan.'
+        ]);
+
+        $roleable_type = null;
+        $roleable_exists = false;
+
+        switch ($validatedData['role_id']) {
+            case 2: // ID untuk role 'ProgramStudi'
+                $roleable_type = ProgramStudi::class; // atau 'App\\Models\\ProgramStudi'
+                $roleable_exists = ProgramStudi::where('id', $validatedData['roleable_id'])->exists();
+                break;
+            case 3: // ID untuk role 'KelompokKeahlian'
+                $roleable_type = KelompokKeahlian::class; // atau 'App\\Models\\KelompokKeahlian'
+                $roleable_exists = KelompokKeahlian::where('id', $validatedData['roleable_id'])->exists();
+                break;
+        }
+
+        if (!$roleable_exists) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Data entitas (Program Studi/Kelompok Keahlian) dengan ID yang diberikan tidak ditemukan.',
+                'errors' => ['roleable_id' => ['ID yang diberikan tidak valid untuk role ini.']]
+            ], 422);
+        }
+
+        try {
+            $user = User::find($validatedData['user_id']);
+            $user->roles()->syncWithoutDetaching([
+                $validatedData['role_id'] => [
+                    'roleable_id' => $validatedData['roleable_id'],
+                    'roleable_type' => $roleable_type
+                ]
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Role berhasil di-assign ke user.',
+                'data' => [
+                    'user' => $user->load('roles'),
+                ]
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal meng-assign role karena terjadi kesalahan pada server.',
+            ], 500);
+        }
     }
     public function revokeRole(Request $request)
     {
