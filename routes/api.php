@@ -135,6 +135,7 @@ Route::prefix('plottingan-pengajaran')->group(function () {
         Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
     });
     Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
+    Route::get('/export/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'exportHasilPlottinganByProdiDanTahunAjaranToExcel']);
 });
 
 // Route::prefix('matakuliah')->group(function () {});

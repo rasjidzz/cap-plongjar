@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\HasilPlottinganExport;
 use App\Models\MappingKelasMatakuliah;
 use App\Models\Matakuliah;
 use App\Models\PlottinganPengajaran;
@@ -713,6 +714,27 @@ class PlottinganPengajaranController extends Controller
             'message' => 'Hasil Plottingan Pengajaran untuk Program Studi "' . $programStudi->nama . '" pada Tahun Ajaran "' . $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester . '" berhasil dimuat.',
             'data' => $paginatedResponse
         ]);
+    }
+
+    public function exportHasilPlottinganByProdiDanTahunAjaranToExcel($id_tahun_ajaran, $id_program_studi)
+    {
+        // Validasi sederhana
+        $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+        $programStudi = ProgramStudi::find($id_program_studi);
+
+        if (!$tahunAjaran || !$programStudi) {
+            abort(404, 'Tahun ajaran atau program studi tidak ditemukan.');
+        }
+
+        // Buat nama file yang dinamis
+        $fileName = 'hasil_plottingan_prodi_'
+            . str_replace('', '_', $programStudi->nama) . '_'
+            . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_'
+            . $tahunAjaran->semester . '.xlsx';
+        // . str_replace(' ', '_', $programStudi->nama) . '.xlsx';
+
+        // Panggil class Export dan picu download
+        return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
     }
 
     // public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen) {}
