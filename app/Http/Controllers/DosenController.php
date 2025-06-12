@@ -141,6 +141,33 @@ class DosenController extends Controller
         ]);
     }
 
+    public function getDosenDenganJabatanStruktural(Request $request)
+    {
+        // Ambil parameter pencarian dan paginasi
+        $searchNama = $request->query('nama', '');
+        $searchNip = $request->query('nip', '');
+        $perPage = $request->query('per_page', 9);
+
+        // Mulai query dengan memfilter dosen yang id_jabatan_struktural-nya TIDAK NULL
+        $query = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama'])
+            ->whereNotNull('id_jabatan_struktural');
+
+        // Terapkan filter pencarian nama
+        $query->when($searchNama, fn($q) => $q->where('name', 'like', "%{$searchNama}%"));
+
+        // Terapkan filter pencarian NIP
+        $query->when($searchNip, fn($q) => $q->where('nip', 'like', "%{$searchNip}%"));
+
+        // Urutkan dan paginasi hasil
+        $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar dosen dengan jabatan struktural berhasil dimuat.',
+            'data' => $dosens
+        ]);
+    }
+
 
     /**
      * Show the form for creating a new resource.
