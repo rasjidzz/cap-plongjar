@@ -42,5 +42,9 @@ class KelompokKeahlian extends Model
     {
         return 'kelompok_keahlian';
     }
+    public function ketua()
+    {
+        return $this->belongsTo(Dosen::class, 'id_ketua_dosen');
+    }
     protected $appends = ['roleable_type', 'unit_type'];
 }

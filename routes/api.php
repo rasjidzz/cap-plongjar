@@ -88,7 +88,7 @@ Route::prefix('masterdata')->group(function () {
 
         // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
         Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
-        Route::post('/koordinator-matakuliah/assign-by-program-studi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudi']); // -> Untuk assign koordinator per program studi
+        Route::post('/koordinator-matakuliah/assign-by-program-studi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudi']);
     });
 
     // ROLE PROGRAM STUDI ONLY (SUPER_ADMIN AND PROGRAM_STUDI)
@@ -107,6 +107,10 @@ Route::prefix('masterdata')->group(function () {
 
         // Tahun Ajaran Management (SUPER_ADMIN ONLY)
         Route::post('/tahun-ajaran/{id_tahun_ajaran}/set-active', [TahunAjaranController::class, 'setActiveTahunAjaran']);
+
+        // ASSIGN KETUA KELOMPOK KEAHLIAN
+        Route::post('/kelompok-keahlian/{id_kk}/assign-ketua', [KelompokKeahlianController::class, 'assignKetua']);
+        Route::post('/kelompok-keahlian/{id_kk}/revoke-ketua', [KelompokKeahlianController::class, 'revokeKetua']);
     });
 
     // MAPPING KELAS MATAKULIAH MANAGEMENT (SUPER_ADMIN, PROGRAM_STUDI)
