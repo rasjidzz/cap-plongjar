@@ -82,22 +82,39 @@ class DosenController extends Controller
         }
 
         // Ambil parameter pencarian dan paginasi dari query string URL
-        $searchNama = $request->query('nama', '');
-        $searchNip = $request->query('nip', '');
+        // $searchNama = $request->query('nama', '');
+        // $searchNip = $request->query('nip', '');
+        $searchTerm = $request->query('search_nama_nip', ''); // -> Bisa search menggunakan nama atau nip
+        $searchKodeDosen = $request->query('kode_dosen', ''); // -> Khusus search menggunakan kode_dosen
         $perPage = $request->query('per_page', 9);
 
         // Mulai query dengan memfilter dosen yang memiliki jabatan struktural tertentu
         $query = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
             ->where('id_jabatan_struktural', $id_jabatan_struktural);
 
-        // Terapkan kondisi pencarian untuk nama jika ada
-        $query->when($searchNama, function ($q) use ($searchNama) {
-            return $q->where('name', 'like', "%{$searchNama}%");
+        // // Terapkan kondisi pencarian untuk nama jika ada
+        // $query->when($searchNama, function ($q) use ($searchNama) {
+        //     return $q->where('name', 'like', "%{$searchNama}%");
+        // });
+
+        // // Terapkan kondisi pencarian untuk NIP jika ada
+        // $query->when($searchNip, function ($q) use ($searchNip) {
+        //     return $q->where('nip', 'like', "%{$searchNip}%");
+        // });
+
+        // Terapkan kondisi pencarian umum (Nama atau NIP) jika ada
+        $query->when($searchTerm, function ($q) use ($searchTerm) {
+            // Menggunakan closure untuk mengelompokkan kondisi OR
+            return $q->where(function ($subQuery) use ($searchTerm) {
+                $subQuery->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('nip', 'like', "%{$searchTerm}%");
+            });
         });
 
-        // Terapkan kondisi pencarian untuk NIP jika ada
-        $query->when($searchNip, function ($q) use ($searchNip) {
-            return $q->where('nip', 'like', "%{$searchNip}%");
+        // Terapkan kondisi pencarian untuk Kode Dosen jika ada
+        $query->when($searchKodeDosen, function ($q) use ($searchKodeDosen) {
+            // Asumsi kolom kode dosen adalah 'lecturer_code'
+            return $q->where('lecturer_code', 'like', "%{$searchKodeDosen}%");
         });
 
         // Urutkan hasil (opsional) dan lakukan paginasi
@@ -113,22 +130,27 @@ class DosenController extends Controller
     public function getAllDosenTanpaJabatanStruktural(Request $request)
     {
         // Ambil parameter pencarian dan paginasi dari query string URL
-        $searchNama = $request->query('nama', '');
-        $searchNip = $request->query('nip', '');
+        $searchTerm = $request->query('search_nama_nip', ''); // -> Bisa search menggunakan nama atau nip
+        $searchKodeDosen = $request->query('kode_dosen', ''); // -> Khusus search menggunakan kode_dosen
         $perPage = $request->query('per_page', 9);
 
         // Mulai query dengan memfilter dosen yang id_jabatan_struktural-nya NULL
         $query = Dosen::with(['kelompokKeahlian:id,nama']) // Eager load relasi yang dibutuhkan
             ->whereNull('id_jabatan_struktural');
 
-        // Terapkan kondisi pencarian untuk nama jika ada
-        $query->when($searchNama, function ($q) use ($searchNama) {
-            return $q->where('name', 'like', "%{$searchNama}%");
+        // Terapkan kondisi pencarian umum (Nama atau NIP) jika ada
+        $query->when($searchTerm, function ($q) use ($searchTerm) {
+            // Menggunakan closure untuk mengelompokkan kondisi OR
+            return $q->where(function ($subQuery) use ($searchTerm) {
+                $subQuery->where('name', 'like', "%{$searchTerm}%")
+                    ->orWhere('nip', 'like', "%{$searchTerm}%");
+            });
         });
 
-        // Terapkan kondisi pencarian untuk NIP jika ada
-        $query->when($searchNip, function ($q) use ($searchNip) {
-            return $q->where('nip', 'like', "%{$searchNip}%");
+        // Terapkan kondisi pencarian untuk Kode Dosen jika ada
+        $query->when($searchKodeDosen, function ($q) use ($searchKodeDosen) {
+            // Asumsi kolom kode dosen adalah 'lecturer_code'
+            return $q->where('lecturer_code', 'like', "%{$searchKodeDosen}%");
         });
 
         // Urutkan hasil (opsional) dan lakukan paginasi
@@ -371,7 +393,7 @@ class DosenController extends Controller
     public function revokeJabatanStrukturalDosen(Request $request)
     {
         $validatedData = $request->validate([
-            'id_dosen' => 'required|exists:dosens,id',
+            'id_dosen' => 'required|integer|exists:dosens,id',
         ]);
 
         try {

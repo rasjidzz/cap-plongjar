@@ -8,6 +8,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Models\User_Role;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Validation\Rule;
 
 class RoleController extends Controller
@@ -56,52 +57,127 @@ class RoleController extends Controller
     {
         return Role::all();
     }
-    public function getAllUserByRole($id_role, Request $request)
+    // public function getAllUserByRole($id_role, Request $request)
+    // {
+    //     $roleExists = Role::find($id_role);
+    //     if (!$roleExists) {
+    //         return response()->json([
+    //             'success' => false,
+    //             'message' => 'Role tidak ditemukan.',
+    //         ], 404);
+    //     }
+
+    //     // Ambil parameter pencarian dan paginasi dari query string URL
+    //     $searchNama = $request->query('nama', '');
+    //     $searchNip = $request->query('nip', '');
+    //     $perPage = $request->query('per_page', 9);
+
+    //     // Mulai query dengan memfilter user yang memiliki role tertentu
+    //     $query = User::whereHas('roles', function ($q) use ($id_role) {
+    //         $q->where('roles.id', $id_role); // Lebih spesifik dengan nama tabel 'roles.id'
+    //     });
+
+    //     // Terapkan kondisi pencarian untuk nama jika ada
+    //     $query->when($searchNama, function ($q) use ($searchNama) {
+    //         return $q->where('name', 'like', "%{$searchNama}%");
+    //     });
+
+    //     // Terapkan kondisi pencarian untuk NIP jika ada
+    //     $query->when($searchNip, function ($q) use ($searchNip) {
+    //         return $q->where('nip', 'like', "%{$searchNip}%");
+    //     });
+
+    //     // Urutkan hasil (opsional) dan lakukan paginasi
+    //     $users = $query->orderBy('name', 'asc')->paginate($perPage);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Daftar pengguna untuk role "' . $roleExists->name . '" berhasil dimuat.',
+    //         'data' => $users
+    //     ]);
+    // }
+
+    public function getAllUserByRole(Request $request, $id_role)
     {
-        // $userData = $this->user_model->getAllUserByRoleId($id_role);
-
-        // return response()->json([
-        //     'message' => 'All User Data by Role Fetched Successfully',
-        //     'data' => $userData
-        // ], 201);
-
-        $roleExists = Role::find($id_role);
-        if (!$roleExists) {
+        $role = Role::find($id_role);
+        if (!$role) {
             return response()->json([
                 'success' => false,
                 'message' => 'Role tidak ditemukan.',
             ], 404);
         }
 
-        // Ambil parameter pencarian dan paginasi dari query string URL
         $searchNama = $request->query('nama', '');
         $searchNip = $request->query('nip', '');
         $perPage = $request->query('per_page', 9);
 
-        // Mulai query dengan memfilter user yang memiliki role tertentu
         $query = User::whereHas('roles', function ($q) use ($id_role) {
-            $q->where('roles.id', $id_role); // Lebih spesifik dengan nama tabel 'roles.id'
+            $q->where('roles.id', $id_role);
+        })->with(['roles' => function ($q) use ($id_role) {
+            $q->where('roles.id', $id_role);
+        }]);
+
+        $query->when($searchNama, fn($q) => $q->where('name', 'like', "%{$searchNama}%"));
+
+        $query->when($searchNip, fn($q) => $q->where('nip', 'like', "%{$searchNip}%"));
+
+        $paginatedUsers = $query->orderBy('name', 'asc')->paginate($perPage);
+
+        $usersOnPage = $paginatedUsers->getCollection();
+
+        // 1. Kumpulkan semua ID yang relevan dari data pivot
+        $prodiIds = [];
+        $kkIds = [];
+        foreach ($usersOnPage as $user) {
+            $roleAssignment = $user->roles->first();
+            if ($roleAssignment?->pivot?->roleable_id) {
+                if ($roleAssignment->pivot->roleable_type === ProgramStudi::class || $roleAssignment->pivot->roleable_type === 'App\\Models\\ProgramStudi') {
+                    $prodiIds[] = $roleAssignment->pivot->roleable_id;
+                } elseif ($roleAssignment->pivot->roleable_type === KelompokKeahlian::class || $roleAssignment->pivot->roleable_type === 'App\\Models\\KelompokKeahlian') {
+                    $kkIds[] = $roleAssignment->pivot->roleable_id;
+                }
+            }
+        }
+
+        // 2. Ambil semua data Program Studi dan Kelompok Keahlian dalam satu kali query per tipe
+        $programStudis = ProgramStudi::whereIn('id', array_unique($prodiIds))->get()->keyBy('id');
+        $kelompokKeahlians = KelompokKeahlian::whereIn('id', array_unique($kkIds))->get()->keyBy('id');
+
+        $formattedUsers = $usersOnPage->map(function ($user) use ($programStudis, $kelompokKeahlians) {
+            $userData = $user->toArray();
+            $roleAssignment = $user->roles->first();
+            $assignmentDetail = null;
+
+            if ($roleAssignment && $roleAssignment->pivot && $roleAssignment->pivot->roleable_id) {
+                if ($roleAssignment->pivot->roleable_type === ProgramStudi::class || $roleAssignment->pivot->roleable_type === 'App\\Models\\ProgramStudi') {
+                    $assignmentDetail = $programStudis->get($roleAssignment->pivot->roleable_id);
+                } elseif ($roleAssignment->pivot->roleable_type === KelompokKeahlian::class || $roleAssignment->pivot->roleable_type === 'App\\Models\\KelompokKeahlian') {
+                    $assignmentDetail = $kelompokKeahlians->get($roleAssignment->pivot->roleable_id);
+                }
+            }
+
+            unset($userData['roles']);
+            $userData['role_name'] = $roleAssignment ? $roleAssignment->name : null;
+            $userData['assignment_detail'] = $assignmentDetail;
+
+            return $userData;
         });
 
-        // Terapkan kondisi pencarian untuk nama jika ada
-        $query->when($searchNama, function ($q) use ($searchNama) {
-            return $q->where('name', 'like', "%{$searchNama}%");
-        });
-
-        // Terapkan kondisi pencarian untuk NIP jika ada
-        $query->when($searchNip, function ($q) use ($searchNip) {
-            return $q->where('nip', 'like', "%{$searchNip}%");
-        });
-
-        // Urutkan hasil (opsional) dan lakukan paginasi
-        $users = $query->orderBy('name', 'asc')->paginate($perPage);
+        $paginatedResponse = new LengthAwarePaginator(
+            $formattedUsers,
+            $paginatedUsers->total(),
+            $paginatedUsers->perPage(),
+            $paginatedUsers->currentPage(),
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         return response()->json([
             'success' => true,
-            'message' => 'Daftar pengguna untuk role "' . $roleExists->name . '" berhasil dimuat.',
-            'data' => $users
+            'message' => 'Daftar pengguna untuk role "' . $role->name . '" berhasil dimuat.',
+            'data' => $paginatedResponse
         ]);
     }
+
     // public function getAllAssignedUserRole()
     // {
     //     $data = $this->user_role_model->getAllAssignedUserRole();
