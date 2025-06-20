@@ -822,6 +822,133 @@ class DosenController extends Controller
             'data' => $responseData
         ]);
     }
+    public function getBebanSksDosenByIdDosenandIdTahunAjaran($id_dosen, $id_tahun_ajaran)
+    {
+        // Langkah 1: Cari tahun ajaran sesuai dengan id tahun ajaran
+        $tahunAjaran = TahunAjaran::where('id', $id_tahun_ajaran)->first();
+
+        // if (!$tahunAjaranAktif) {
+        if (!$tahunAjaran) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tidak ada tahun ajaran yang sedang aktif saat ini.',
+            ], 404);
+        }
+
+        // Langkah 2: Cari dosen berdasarkan ID dan eager load relasi jabatan
+        $dosen = Dosen::with('jabatanStruktural')->find($id_dosen);
+
+        if (!$dosen) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Dosen tidak ditemukan.',
+            ], 404);
+        }
+
+        // Langkah 3: Lakukan perhitungan SKS
+        $konversi_sks_jabatan = 0;
+        if ($dosen->jabatanStruktural) {
+            $konversi_sks_jabatan = (int)$dosen->jabatanStruktural->konversi_sks;
+        }
+
+        $maksimalTotalSks = 16; // Batas total SKS
+        $maxAjarSks = $maksimalTotalSks - $konversi_sks_jabatan;
+        $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks; // Pastikan tidak negatif
+
+        // Panggil method dari model Dosen untuk menghitung SKS mengajar yang sudah diplot
+        $totalSksMengajar = $dosen->getTotalSksMengajarPadaTahunAjaran($tahunAjaran->id);
+
+        // Hitung sisa SKS yang bisa diambil
+        $sisaSksMengajar = $maxAjarSks - $totalSksMengajar;
+
+        // Opsi 1
+        // Langkah 4: Siapkan data untuk respons
+        // $responseData = [
+        //     'id_dosen' => $dosen->id,
+        //     'nama_dosen' => $dosen->name,
+        //     'info_tahun_ajaran_aktif' => [
+        //         'id' => $tahunAjaranAktif->id,
+        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+        //     ],
+        //     'perhitungan_sks' => [
+        //         'sks_ekuivalen_jabatan_struktural' => $konversi_sks_jabatan,
+        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
+        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
+        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
+        //     ]
+        // ];
+
+        // Opsi 2
+        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
+        // $plottingans = $dosen->plottinganPengajarans()
+        //     ->whereHas('mappingKelasMatakuliah', function ($query) use ($tahunAjaranAktif) {
+        //         $query->where('id_tahun_ajaran', $tahunAjaranAktif->id);
+        //     })
+        //     ->with('mappingKelasMatakuliah.programStudi:id,nama') // Eager load relasi Program Studi
+        //     ->get();
+
+        // $rincianSksPerProdi = $plottingans->groupBy('mappingKelasMatakuliah.programStudi.nama')
+        //     ->map(function ($items) {
+        //         return $items->sum('beban_sks');
+        //     });
+
+        // Langkah 4: Siapkan data untuk respons
+        // $responseData = [
+        //     'id_dosen' => $dosen->id,
+        //     'nama_dosen' => $dosen->name,
+        //     'info_tahun_ajaran_aktif' => [
+        //         'id' => $tahunAjaranAktif->id,
+        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+        //     ],
+        //     'perhitungan_sks' => [
+        //         'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
+        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
+        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
+        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
+        //         'rincian_sks_per_prodi' => $rincianSksPerProdi->isNotEmpty() ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
+        //     ]
+        // ];
+
+        // Opsi 3
+        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
+        $programStudis = ProgramStudi::select(['id', 'nama'])->get();
+        $rincianSksPerProdi = [];
+
+        foreach ($programStudis as $prodi) {
+            $sksDiProdiIni = $dosen->plottinganPengajarans()
+                ->whereHas('mappingKelasMatakuliah', function ($queryMKM) use ($tahunAjaran, $prodi) {
+                    $queryMKM->where('id_tahun_ajaran', $tahunAjaran->id)
+                        ->where('id_program_studi', $prodi->id);
+                })
+                ->sum('beban_sks');
+
+            // Tambahkan semua prodi ke array, dengan SKS 0 jika tidak mengajar
+            $rincianSksPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
+        }
+        // Langkah 4: Siapkan data untuk respons
+        $responseData = [
+            'id_dosen' => $dosen->id,
+            'nama_dosen' => $dosen->name,
+            'info_tahun_ajaran_aktif' => [
+                'id' => $tahunAjaran->id,
+                'deskripsi' => $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester,
+            ],
+            'perhitungan_sks' => [
+                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
+                'batas_maksimal_sks_mengajar' => $maxAjarSks,
+                'total_sks_mengajar_saat_ini' => $totalSksMengajar,
+                'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
+                'rincian_sks_per_prodi' => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
+            ]
+        ];
+
+        // Langkah 5: Kembalikan respons JSON
+        return response()->json([
+            'success' => true,
+            'message' => 'Rincian beban SKS dosen berhasil dimuat.',
+            'data' => $responseData
+        ]);
+    }
     /**
      * Display the specified resource.
      */
