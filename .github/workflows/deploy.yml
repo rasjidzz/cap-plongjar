@@ -27,7 +27,7 @@ jobs:
 
             git checkout development
 
-            git pull origin development # <-- UBAH INI
+            git pull origin development
 
             echo "✅ Code updated from development branch"
 
