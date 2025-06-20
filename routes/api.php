@@ -89,11 +89,15 @@ Route::prefix('masterdata')->group(function () {
         // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
         Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
         Route::post('/koordinator-matakuliah/assign-by-program-studi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudi']);
+        Route::post('/koordinator-matakuliah/assign-by-program-studi/by-auth-prodi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudiWithLoggedInProdi']);
     });
 
     // ROLE PROGRAM STUDI ONLY (SUPER_ADMIN AND PROGRAM_STUDI)
     Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
+        // Route untuk mengambil mata kuliah berdasarkan Program Studi dari user yang sedang login
+        Route::get('/matakuliahs/by-auth-prodi', [MatakuliahController::class, 'getMatakuliahByPicProgramStudi']);
         Route::apiResource('matakuliahs', MatakuliahController::class);
+        // Route::get('/getMatakuliahProdi', [MatakuliahController::class, 'getMatakuliahByPicProgramStudi']);
         Route::apiResource('tahunajarans', TahunAjaranController::class);
         Route::apiResource('mappingkelasmatakuliahs', MappingKelasMatakuliahController::class);
     });
@@ -135,8 +139,10 @@ Route::prefix('plottingan-pengajaran')->group(function () {
         Route::get('/dosen/laporan-beban-sks/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getLaporanBebanSksDosen']);
         Route::get('/dosen/{id_dosen}/riwayat-pengajaran', [DosenController::class, 'getRiwayatPengajaran']);
         Route::get('/dosen/{id_dosen}/beban-sks-aktif', [DosenController::class, 'getBebanSksDosenByIdDosenandActiveTahunAjaran']);
+        Route::get('/dosen/{id_dosen}/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getBebanSksDosenByIdDosenandIdTahunAjaran']);
+        // Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
     });
-    Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab'])->group(function () {
+    Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab,ProgramStudi,KelompokKeahlian'])->group(function () {
         Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
     });
     Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);

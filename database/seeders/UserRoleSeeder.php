@@ -146,5 +146,14 @@ class UserRoleSeeder extends Seeder
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        // Admin Prod DS
+        User_Role::create([
+            'user_id' => 8,
+            'role_id' => 2,
+            'roleable_id' => 3,
+            'roleable_type' => "App\\Models\\ProgramStudi",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
     }
 }
