@@ -33,7 +33,7 @@ jobs:
 
             echo "✅ Composer dependencies installed"
 
-            docker compose exec app php artisan migrate --force
+            docker compose exec app php artisan migrate:fresh --seed --force
 
             echo "✅ Database migrated"
 
