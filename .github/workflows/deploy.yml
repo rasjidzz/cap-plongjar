@@ -1,4 +1,4 @@
-# .github/workflows/deploy.yml - VERSI DEBUGGING
+# .github/workflows/deploy.yml - VERSI FINAL BERSIH
 
 name: Deploy to Development VPS
 
@@ -15,33 +15,31 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # ================= LANGKAH DEBUGGING BARU =================
-      - name: 🧐 Debug SSH Key Secret
-        run: |
-          echo "Secret is present: ${{ secrets.VPS_SSH_PRIVATE_KEY != '' }}"
-          echo "Key starts with: $(echo '${{ secrets.VPS_SSH_PRIVATE_KEY }}' | cut -c 1-35)"
-          echo "Key ends with: $(echo '${{ secrets.VPS_SSH_PRIVATE_KEY }}' | tail -c 35)"
-
-      - name: 🔑 Install SSH Key with shimataro/ssh-key-action
-        uses: shimataro/ssh-key-action@v2
-        with:
-          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          name: id_ed25519_github_actions # nama file kunci yang akan dibuat di runner
-          known_hosts: "just-a-placeholder-so-we-dont-get-an-error"
-
-      - name: 🔬 Debugging SSH Connection Manually from Runner
-        run: |
-          echo "Attempting manual SSH connection with verbose output..."
-          ssh -i ~/.ssh/id_ed25519_github_actions -v -o StrictHostKeyChecking=no -p 22 ${{ secrets.VPS_USERNAME }}@${{ secrets.VPS_HOST }} "echo '✅✅✅ Manual SSH Connection from Runner Successful!'"
-      # ================= AKHIR LANGKAH DEBUGGING =================
-      - name: Deploy to VPS via SSH (Langkah Asli)
-        if: always() # Selalu jalankan langkah ini, bahkan jika langkah debug gagal, agar kita bisa melihat error aslinya
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            echo "Original appleboy/ssh-action started..."
             cd ${{ secrets.PROJECT_PATH }}
-            echo "🚀 Deployment test."
+
+            git checkout development
+            git pull origin development
+
+            echo "✅ Code updated from development branch"
+
+            docker compose exec app composer install --no-dev --optimize-autoloader
+
+            echo "✅ Composer dependencies installed"
+
+            docker compose exec app php artisan migrate --force
+
+            echo "✅ Database migrated"
+
+            docker compose exec app php artisan config:cache
+            docker compose exec app php artisan route:cache
+            docker compose exec app php artisan view:cache
+
+            echo "✅ Application cache cleared and rebuilt"
+            echo "🚀 Deployment to development finished successfully!"
