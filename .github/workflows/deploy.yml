@@ -24,10 +24,18 @@ jobs:
           script: |
             cd ${{ secrets.PROJECT_PATH }}
 
+            cd backend
+
+            echo "✅ Now in $(pwd) directory"
+
             git checkout development
             git pull origin development
 
             echo "✅ Code updated from development branch"
+
+            cd ..
+
+            echo "✅ Back in $(pwd) directory, running Docker commands"
 
             docker compose exec app composer install
 
