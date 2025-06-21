@@ -1,0 +1,53 @@
+# .github/workflows/deploy.yml - VERSI FINAL BERSIH
+
+name: Deploy to Development VPS
+
+on:
+  push:
+    branches:
+      - development
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Deploy to VPS via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.VPS_HOST }}
+          username: ${{ secrets.VPS_USERNAME }}
+          key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+          script: |
+            cd ${{ secrets.PROJECT_PATH }}
+
+            cd backend
+
+            echo "✅ Now in $(pwd) directory"
+
+            git checkout development
+            git pull origin development
+
+            echo "✅ Code updated from development branch"
+
+            cd ..
+
+            echo "✅ Back in $(pwd) directory, running Docker commands"
+
+            docker compose exec app composer install
+
+            echo "✅ Composer dependencies installed"
+
+            docker compose exec app php artisan migrate:fresh --seed --force
+
+            echo "✅ Database migrated"
+
+            docker compose exec app php artisan config:cache
+            docker compose exec app php artisan route:cache
+            docker compose exec app php artisan view:cache
+
+            echo "✅ Application cache cleared and rebuilt"
+            echo "🚀 Deployment to development finished successfully!"

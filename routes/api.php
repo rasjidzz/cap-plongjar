@@ -159,11 +159,7 @@ Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
     return $data;
 });
 
-// Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
-//     return $request->user();
-// });
-
-
+Route::get('/testgetdatadosen', [DosenController::class, 'index']);
 
 Route::fallback(function () {
     return response()->json([

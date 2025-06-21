@@ -78,6 +78,7 @@ class UserRoleSeeder extends Seeder
     {
         $now = now();
 
+        // Super Admin
         User_Role::create([
             'user_id' => 1,
             'role_id' => 1,
@@ -146,12 +147,53 @@ class UserRoleSeeder extends Seeder
             'created_at' => $now,
             'updated_at' => $now,
         ]);
-        // Admin Prod DS
+
+        // Admin Prodi DS
         User_Role::create([
             'user_id' => 8,
             'role_id' => 2,
             'roleable_id' => 3,
             'roleable_type' => "App\\Models\\ProgramStudi",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Admin Prodi IT
+        User_Role::create([
+            'user_id' => 9,
+            'role_id' => 2,
+            'roleable_id' => 3,
+            'roleable_type' => "App\\Models\\ProgramStudi",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Admin KK SEAL
+        User_Role::create([
+            'user_id' => 10,
+            'role_id' => 3,
+            'roleable_id' => 1,
+            'roleable_type' => "App\\Models\\KelompokKeahlian",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Admin KK DSIS
+        User_Role::create([
+            'user_id' => 11,
+            'role_id' => 3,
+            'roleable_id' => 2,
+            'roleable_type' => "App\\Models\\KelompokKeahlian",
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        // Admin LAK
+        User_Role::create([
+            'user_id' => 12,
+            'role_id' => 4,
+            'roleable_id' => null,
+            'roleable_type' => null,
             'created_at' => $now,
             'updated_at' => $now,
         ]);

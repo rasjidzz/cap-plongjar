@@ -46,7 +46,8 @@ class DosenFactory extends Factory
             'name' => $this->faker->name(),
             'lecturer_code' => $kode,
             'nip' => $this->faker->unique()->numerify('##############'),
-            'nidn' => $this->faker->optional()->numerify('##########'),
+            // 'nidn' => $this->faker->optional()->numerify('##########'),
+            'nidn' => $this->faker->unique()->numerify('##########'),
             'email' => $this->faker->unique()->safeEmail(),
             'jabatan_fungsional_akademik' => $this->faker->randomElement([
                 'lektor',
@@ -63,8 +64,8 @@ class DosenFactory extends Factory
                 'Dosen Profesional (part time)',
                 'Pegawai Tetap'
             ]),
-            'pendidikan_terakhir' => $this->faker->randomElement(['SMA', 'S-1', 'S-2', 'S-3']),
-            'id_kelompok_keahlian' => $this->faker->numberBetween(1, 5),
+            'pendidikan_terakhir' => $this->faker->randomElement(['S-1', 'S-2', 'S-3']),
+            'id_kelompok_keahlian' => $this->faker->numberBetween(1, 3),
             'id_jabatan_struktural' => $idJabatanStruktural,
         ];
     }

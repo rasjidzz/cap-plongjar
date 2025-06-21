@@ -26,24 +26,49 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
+    // public function getAllDosen(Request $request)
+    // {
+    //     $query = Dosen::with('kelompokKeahlian:id,nama')
+    //         ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
+    //         ->when($request->search, function ($q) use ($request) {
+    //             $q->where(function ($subQuery) use ($request) {
+    //                 $subQuery->where('name', 'like', '%' . $request->search . '%')
+    //                     ->orWhere('lecturer_code', 'like', '%' . $request->search . '%')
+    //                     ->orWhere('nip', 'like', '%' . $request->search . '%');
+    //             });
+    //         });
+
+    //     // Default pagination: 10 per page, bisa dicustom lewat query param ?per_page=
+    //     $data = $query->paginate($request->get('per_page', 10));
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'List All Dosen (filtered & paginated)',
+    //         'data' => $data
+    //     ]);
+    // }
     public function getAllDosen(Request $request)
     {
-        $query = Dosen::with('kelompokKeahlian:id,nama')
-            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian')
-            ->when($request->search, function ($q) use ($request) {
-                $q->where(function ($subQuery) use ($request) {
-                    $subQuery->where('name', 'like', '%' . $request->search . '%')
-                        ->orWhere('lecturer_code', 'like', '%' . $request->search . '%')
-                        ->orWhere('nip', 'like', '%' . $request->search . '%');
-                });
-            });
+        $searchNama = $request->query('nama', '');
+        $searchKodeDosen = $request->query('kode_dosen', '');
+        $perPage = $request->query('per_page', 10);
 
-        // Default pagination: 10 per page, bisa dicustom lewat query param ?per_page=
-        $data = $query->paginate($request->get('per_page', 10));
+        $query = Dosen::with('kelompokKeahlian:id,nama') // 'nama' diganti 'name' untuk konsistensi
+            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian');
+
+        $query->when($searchNama, function ($q) use ($searchNama) {
+            return $q->where('name', 'like', "%{$searchNama}%");
+        });
+
+        $query->when($searchKodeDosen, function ($q) use ($searchKodeDosen) {
+            return $q->where('lecturer_code', 'like', "%{$searchKodeDosen}%");
+        });
+
+        $data = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json([
             'success' => true,
-            'message' => 'List All Dosen (filtered & paginated)',
+            'message' => 'Daftar semua dosen berhasil dimuat.',
             'data' => $data
         ]);
     }

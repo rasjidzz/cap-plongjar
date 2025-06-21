@@ -17,8 +17,6 @@ class KelompokKeahlianSeeder extends Seeder
             'Software Engineering and Algorithm',
             'Data Science and Intelligent System',
             'Communication and Information Technology Infrastructure',
-            'Processing, Information Security, and Computer Engineering',
-            'Applied Digital Business, Entrepreneurship & Tourism',
         ];
 
         foreach ($data as $nama) {
