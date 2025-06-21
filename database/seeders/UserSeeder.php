@@ -95,5 +95,29 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'nip' => $generateNip(),
         ]);
+        User::create([
+            'name' => 'Admin Prodi S1 Information Technology',
+            'email' => 'adminit@example.com',
+            'password' => Hash::make('password'),
+            'nip' => $generateNip(),
+        ]);
+        User::create([
+            'name' => 'Admin KK SEAL',
+            'email' => 'adminseal@example.com',
+            'password' => Hash::make('password'),
+            'nip' => $generateNip(),
+        ]);
+        User::create(attributes: [
+            'name' => 'Admin KK DSIS',
+            'email' => 'admindsis@example.com',
+            'password' => Hash::make('password'),
+            'nip' => $generateNip(),
+        ]);
+        User::create(attributes: [
+            'name' => 'Admin LAK',
+            'email' => 'admindlak@example.com',
+            'password' => Hash::make('password'),
+            'nip' => $generateNip(),
+        ]);
     }
 }
