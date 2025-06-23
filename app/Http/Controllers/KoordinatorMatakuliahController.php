@@ -13,18 +13,108 @@ class KoordinatorMatakuliahController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index()
+    // public function index()
+    // {
+    //     $data = KoordinatorMatakuliah::with([
+    //         'dosen:id,name,lecturer_code', // Ambil ID, nama, dan kode dosen
+    //         'mappingKelasMatakuliah:id,nama_kelas,id_matakuliah,id_tahun_ajaran', // Ambil info dasar mapping
+    //         'mappingKelasMatakuliah.matakuliah:id,nama_matakuliah,kode_matkul', // Ambil info mata kuliah dari mapping
+    //         'mappingKelasMatakuliah.tahunAjaran:id,tahun_ajaran,semester' // Ambil info tahun ajaran dari mapping
+    //     ])->get();
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Get All Data Koordinator Matakuliah With Dosen, MappingKelasMatakuliah, Matakuliah, Tahun Ajaran',
+    //         'data' => $data
+    //     ]);
+    // }
+    // public function index(Request $request)
+    // {
+    //     // 1. Validasi bahwa parameter yang dibutuhkan ada
+    //     $validated = $request->validate([
+    //         'id_matakuliah' => 'required|integer|exists:matakuliahs,id',
+    //         'id_tahun_ajaran' => 'required|integer|exists:tahun_ajarans,id',
+    //     ], [
+    //         'id_matakuliah.required' => 'Parameter id_matakuliah wajib diisi.',
+    //         'id_tahun_ajaran.required' => 'Parameter id_tahun_ajaran wajib diisi.',
+    //         'id_matakuliah.exists' => 'Mata Kuliah tidak ditemukan.',
+    //         'id_tahun_ajaran.exists' => 'Tahun Ajaran tidak ditemukan.',
+    //     ]);
+
+    //     // 2. Mulai membangun query
+    //     $query = KoordinatorMatakuliah::query()->with([
+    //         'dosen:id,name,lecturer_code',
+    //         'mappingKelasMatakuliah:id,nama_kelas,id_matakuliah,id_tahun_ajaran',
+    //         'mappingKelasMatakuliah.matakuliah:id,nama_matakuliah',
+    //         'mappingKelasMatakuliah.tahunAjaran:id,tahun_ajaran,semester',
+    //     ]);
+
+    //     // 3. Terapkan filter utama menggunakan whereHas
+    //     $query->whereHas('mappingKelasMatakuliah', function ($q) use ($validated) {
+    //         $q->where('id_matakuliah', $validated['id_matakuliah'])
+    //             ->where('id_tahun_ajaran', $validated['id_tahun_ajaran']);
+    //     });
+
+    //     // 4. Ambil hasilnya
+    //     $koordinators = $query->get();
+
+    //     if ($koordinators->isEmpty()) {
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Tidak ada koordinator yang ditemukan untuk mata kuliah dan tahun ajaran ini.',
+    //             'data' => []
+    //         ], 200);
+    //     }
+
+    //     // 5. Kembalikan respons sukses
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Data koordinator mata kuliah berhasil dimuat.',
+    //         'data' => $koordinators
+    //     ]);
+    // }
+    public function index(Request $request)
     {
-        $data = KoordinatorMatakuliah::with([
-            'dosen:id,name,lecturer_code', // Ambil ID, nama, dan kode dosen
-            'mappingKelasMatakuliah:id,nama_kelas,id_matakuliah,id_tahun_ajaran', // Ambil info dasar mapping
-            'mappingKelasMatakuliah.matakuliah:id,nama_matakuliah,kode_matkul', // Ambil info mata kuliah dari mapping
-            'mappingKelasMatakuliah.tahunAjaran:id,tahun_ajaran,semester' // Ambil info tahun ajaran dari mapping
-        ])->get();
+        // 1. Validasi bahwa parameter yang dibutuhkan ada
+        $validated = $request->validate([
+            'id_matakuliah' => 'required|integer|exists:matakuliahs,id',
+            'id_tahun_ajaran' => 'required|integer|exists:tahun_ajarans,id',
+        ], [
+            'id_matakuliah.required' => 'Parameter id_matakuliah wajib diisi.',
+            'id_tahun_ajaran.required' => 'Parameter id_tahun_ajaran wajib diisi.',
+            'id_matakuliah.exists' => 'Mata Kuliah tidak ditemukan.',
+            'id_tahun_ajaran.exists' => 'Tahun Ajaran tidak ditemukan.',
+        ]);
+
+        // 2. Mulai membangun query
+        $query = KoordinatorMatakuliah::query()->with([
+            // Eager load relasi dosen untuk mendapatkan datanya
+            'dosen:id,name,lecturer_code',
+        ]);
+
+        // 3. Terapkan filter utama menggunakan whereHas
+        $query->whereHas('mappingKelasMatakuliah', function ($q) use ($validated) {
+            $q->where('id_matakuliah', $validated['id_matakuliah'])
+                ->where('id_tahun_ajaran', $validated['id_tahun_ajaran']);
+        });
+
+        // 4. Ambil satu hasil pertama saja
+        // Karena koordinatornya sama, kita hanya butuh satu record.
+        $koordinator = $query->first();
+
+        // Cek jika tidak ada koordinator atau koordinator tidak memiliki dosen yang terkait
+        if (!$koordinator || !$koordinator->dosen) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada koordinator yang ditemukan untuk mata kuliah dan tahun ajaran ini.',
+                'data' => null // Mengembalikan null karena tidak ada data
+            ], 200);
+        }
+
+        // 5. Kembalikan data dosen koordinatornya saja
         return response()->json([
             'success' => true,
-            'message' => 'Get All Data Koordinator Matakuliah With Dosen, MappingKelasMatakuliah, Matakuliah, Tahun Ajaran',
-            'data' => $data
+            'message' => 'Data koordinator mata kuliah berhasil dimuat.',
+            'data' => $koordinator->dosen // Langsung mengembalikan objek dosen
         ]);
     }
 
