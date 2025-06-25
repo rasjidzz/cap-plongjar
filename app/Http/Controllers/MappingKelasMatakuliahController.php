@@ -218,6 +218,56 @@ class MappingKelasMatakuliahController extends Controller
             ], 500);
         }
     }
+
+    public function getMappingByMatkulTahunAjaranAndAuthProdi(Request $request, $id_matakuliah, $id_tahun_ajaran)
+    {
+        $user = $request->user();
+        $userProdiId = null;
+
+        $user->loadMissing('roles');
+
+        foreach ($user->roles as $role) {
+            if ($role->name === 'ProgramStudi' && isset($role->pivot->roleable_id)) {
+                $userProdiId = $role->pivot->roleable_id;
+                break;
+            }
+        }
+
+        if (is_null($userProdiId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Program Studi manapun.',
+            ], 403); // 403 Forbidden
+        }
+
+        $query = MappingKelasMatakuliah::query()->with([
+            'matakuliah.pic',
+            'tahunAjaran',
+            'programStudi',
+            'plottinganPengajarans.dosen',
+            'koordinatorMatakuliah.dosen',
+        ]);
+
+        $query->where('id_matakuliah', $id_matakuliah)
+            ->where('id_tahun_ajaran', $id_tahun_ajaran)
+            ->where('id_program_studi', $userProdiId); // Filter berdasarkan prodi user
+
+        $data = $query->orderBy('nama_kelas', 'asc')->get();
+
+        $formattedData = $data->map(function ($mapping) {
+            return [
+                'nama_kelas' => $mapping->nama_kelas,
+                'kuota' => $mapping->kuota,
+                'team_teaching' => (bool)$mapping->team_teaching,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data mapping kelas mata kuliah berhasil dimuat.',
+            'data' => $formattedData
+        ]);
+    }
     /**
      * Display the specified resource.
      */

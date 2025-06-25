@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul']);
             Route::get('/mapping-kelas-matakuliah/matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatakuliahByIdMatakuliahIdTahunAjaranandIdProgramStudi']);
             Route::get('/mapping-kelas-matakuliah/by-matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahunajaran}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulByIdMatkulandIdTahunAjaran']);
+            Route::get('/mapping-kelas-matakuliah/by-matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahun_ajaran}/logged-in-prodi', [MappingKelasMatakuliahController::class, 'getMappingByMatkulTahunAjaranAndAuthProdi']);
 
             // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
             Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
