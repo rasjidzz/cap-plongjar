@@ -696,6 +696,7 @@ class PlottinganPengajaranController extends Controller
                 'tingkat_matakuliah'        => $matakuliah?->tingkat_matakuliah,
                 'hour_target'               => $matakuliah?->hour_target,
                 'mk_eksepsi'                => $matakuliah?->matakuliah_eksepsi,
+                'team_teaching'             => $mkm ? ($mkm->team_teaching ? 'Yes' : 'No') : null,
             ];
         });
 

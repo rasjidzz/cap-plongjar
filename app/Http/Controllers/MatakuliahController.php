@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\KelompokKeahlian;
 use App\Models\Matakuliah;
 use App\Models\Pic;
 use App\Models\ProgramStudi;
@@ -105,6 +106,74 @@ class MatakuliahController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar Mata Kuliah untuk PIC "' . $assignedEntityName . '" berhasil dimuat.',
+                'data' => $matakuliahs
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+    public function getMatakuliahForPlottingByProdiAndKK(Request $request)
+    {
+        try {
+            // --- Langkah 1: Dapatkan Konteks User dan Daftar PIC yang Relevan ---
+            $user = $request->user();
+            $user->loadMissing('roles');
+
+            $userProdiName = null;
+            foreach ($user->roles as $role) {
+                if ($role->name === 'ProgramStudi' && isset($role->pivot->roleable_id)) {
+                    $programStudi = ProgramStudi::find($role->pivot->roleable_id);
+                    if ($programStudi) {
+                        $userProdiName = $programStudi->nama;
+                        break;
+                    }
+                }
+            }
+
+            if (is_null($userProdiName)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Program Studi manapun.',
+                ], 403);
+            }
+
+            $kelompokKeahlianNames = KelompokKeahlian::pluck('nama')->toArray();
+
+            $relevantPicIds = Pic::where('name', $userProdiName)
+                ->orWhereIn('name', $kelompokKeahlianNames)
+                ->pluck('id')
+                ->toArray();
+
+            if (empty($relevantPicIds)) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada mata kuliah yang ditemukan untuk Program Studi Anda atau Kelompok Keahlian manapun.',
+                    'data' => []
+                ], 200);
+            }
+
+            // --- Langkah 2: Query Mata Kuliah Berdasarkan PIC yang Relevan ---
+            $query = Matakuliah::query()->with('pic')->whereIn('id_pic', $relevantPicIds);
+
+            // $searchTerm = $request->query('search', '');
+            // $perPage = $request->query('per_page', 15);
+
+            // $query->when($searchTerm, function ($q) use ($searchTerm) {
+            //     $q->where(function ($subQuery) use ($searchTerm) {
+            //         $subQuery->where('nama_matakuliah', 'like', "%{$searchTerm}%")
+            //             ->orWhere('kode_matkul', 'like', "%{$searchTerm}%");
+            //     });
+            // });
+
+            // $matakuliahs = $query->orderBy('nama_matakuliah', 'asc')->paginate($perPage);
+            $matakuliahs = $query->orderBy('nama_matakuliah', 'asc')->get();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar Mata Kuliah untuk "' . $userProdiName . '" dan semua Kelompok Keahlian berhasil dimuat.',
                 'data' => $matakuliahs
             ]);
         } catch (\Exception $e) {

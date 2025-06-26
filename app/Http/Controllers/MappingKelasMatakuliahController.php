@@ -42,7 +42,10 @@ class MappingKelasMatakuliahController extends Controller
     public function getMappingKelasMatkulByIdMatkulandIdTahunAjaran($id_matakuliah, $id_tahunajaran)
     {
         $data = MappingKelasMatakuliah::with([
-            'matakuliah:id,kode_matkul,nama_matakuliah,sks', // Memuat detail mata kuliah
+            // 'matakuliah:id,kode_matkul,nama_matakuliah,sks,praktikum,mode_perkuliahan', // Memuat detail mata kuliah
+            'matakuliah' => function ($matakuliahQuery) {
+                $matakuliahQuery->with('pic:id,name'); // Eager load relasi 'pic' dan pilih kolomnya
+            },
             'tahunAjaran:id,tahun_ajaran,semester',         // Memuat detail tahun ajaran
             'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen', // Memuat plottingan
             'plottinganPengajarans.dosen:id,name,lecturer_code' // Memuat dosen dari plottingan
