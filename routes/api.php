@@ -138,6 +138,7 @@ Route::prefix('v1')->group(function () {
     Route::prefix('plottingan-pengajaran')->group(function () {
         Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
             Route::apiResource('start-plottingan-pengajaran', PlottinganPengajaranController::class);
+            Route::delete('/unassign/{plottinganPengajaran}', [PlottinganPengajaranController::class, 'unassignPlottingan']);
             Route::get('/get-hasil-plottingan-pengajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'getHasilPlottinganPengajaranByTahunAjaranId']);
             Route::get('/dosen/laporan-beban-sks/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getLaporanBebanSksDosen']);
             Route::get('/dosen/{id_dosen}/riwayat-pengajaran', [DosenController::class, 'getRiwayatPengajaran']);
