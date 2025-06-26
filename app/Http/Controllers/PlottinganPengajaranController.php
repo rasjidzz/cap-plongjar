@@ -738,6 +738,24 @@ class PlottinganPengajaranController extends Controller
         return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
     }
 
+    public function unassignPlottingan(PlottinganPengajaran $plottinganPengajaran)
+    {
+        try {
+            // Melakukan soft delete. Eloquent akan otomatis mengisi kolom 'deleted_at'.
+            $plottinganPengajaran->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Plottingan pengajaran berhasil dihapus (un-assigned).'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus plottingan karena terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+
     // public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen) {}
 
     /**
