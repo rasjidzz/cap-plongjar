@@ -98,6 +98,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
             // Route untuk mengambil mata kuliah berdasarkan Program Studi dari user yang sedang login
             Route::get('/matakuliahs/by-auth-prodi', [MatakuliahController::class, 'getMatakuliahByPicProgramStudi']);
+            Route::get('/matakuliahs/by-auth-prodi-and-all-kk', [MatakuliahController::class, 'getMatakuliahForPlottingByProdiAndKK']);
             Route::apiResource('matakuliahs', MatakuliahController::class);
             // Route::get('/getMatakuliahProdi', [MatakuliahController::class, 'getMatakuliahByPicProgramStudi']);
             Route::apiResource('tahunajarans', TahunAjaranController::class);
