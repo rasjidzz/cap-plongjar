@@ -89,6 +89,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/mapping-kelas-matakuliah/by-matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahun_ajaran}/logged-in-prodi', [MappingKelasMatakuliahController::class, 'getMappingByMatkulTahunAjaranAndAuthProdi']);
 
             // KOORDINATOR_MATAKULIAH (SUPER_ADMIN, PROGRAM_STUDI)
+            Route::post('/koordinator-matakuliah/revoke-by-program-studi', [KoordinatorMatakuliahController::class, 'revokeKoordinatorByProgramStudi']);
             Route::apiResource('koordinator-matakuliah', KoordinatorMatakuliahController::class);
             Route::post('/koordinator-matakuliah/assign-by-program-studi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudi']);
             Route::post('/koordinator-matakuliah/assign-by-program-studi/by-auth-prodi', [KoordinatorMatakuliahController::class, 'assignKoordinatorByProgramStudiWithLoggedInProdi']);
