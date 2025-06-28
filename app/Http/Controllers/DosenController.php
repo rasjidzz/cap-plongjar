@@ -53,7 +53,7 @@ class DosenController extends Controller
         $searchKodeDosen = $request->query('kode_dosen', '');
         $perPage = $request->query('per_page', 10);
 
-        $query = Dosen::with('kelompokKeahlian:id,nama') // 'nama' diganti 'name' untuk konsistensi
+        $query = Dosen::with('kelompokKeahlian:id,nama')
             ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian');
 
         $query->when($searchNama, function ($q) use ($searchNama) {
@@ -106,43 +106,25 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Ambil parameter pencarian dan paginasi dari query string URL
-        // $searchNama = $request->query('nama', '');
-        // $searchNip = $request->query('nip', '');
-        $searchTerm = $request->query('search_nama_nip', ''); // -> Bisa search menggunakan nama atau nip
-        $searchKodeDosen = $request->query('kode_dosen', ''); // -> Khusus search menggunakan kode_dosen
+        $searchTerm = $request->query('search_nama_nip', '');
+        $searchKodeDosen = $request->query('kode_dosen', '');
         $perPage = $request->query('per_page', 9);
 
-        // Mulai query dengan memfilter dosen yang memiliki jabatan struktural tertentu
         $query = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks'])
             ->where('id_jabatan_struktural', $id_jabatan_struktural);
 
-        // // Terapkan kondisi pencarian untuk nama jika ada
-        // $query->when($searchNama, function ($q) use ($searchNama) {
-        //     return $q->where('name', 'like', "%{$searchNama}%");
-        // });
 
-        // // Terapkan kondisi pencarian untuk NIP jika ada
-        // $query->when($searchNip, function ($q) use ($searchNip) {
-        //     return $q->where('nip', 'like', "%{$searchNip}%");
-        // });
-
-        // Terapkan kondisi pencarian umum (Nama atau NIP) jika ada
         $query->when($searchTerm, function ($q) use ($searchTerm) {
-            // Menggunakan closure untuk mengelompokkan kondisi OR
             return $q->where(function ($subQuery) use ($searchTerm) {
                 $subQuery->where('name', 'like', "%{$searchTerm}%")
                     ->orWhere('nip', 'like', "%{$searchTerm}%");
             });
         });
 
-        // Terapkan kondisi pencarian untuk Kode Dosen jika ada
         $query->when($searchKodeDosen, function ($q) use ($searchKodeDosen) {
-            // Asumsi kolom kode dosen adalah 'lecturer_code'
             return $q->where('lecturer_code', 'like', "%{$searchKodeDosen}%");
         });
 
-        // Urutkan hasil (opsional) dan lakukan paginasi
         $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json([
@@ -154,31 +136,24 @@ class DosenController extends Controller
 
     public function getAllDosenTanpaJabatanStruktural(Request $request)
     {
-        // Ambil parameter pencarian dan paginasi dari query string URL
-        $searchTerm = $request->query('search_nama_nip', ''); // -> Bisa search menggunakan nama atau nip
-        $searchKodeDosen = $request->query('kode_dosen', ''); // -> Khusus search menggunakan kode_dosen
+        $searchTerm = $request->query('search_nama_nip', '');
+        $searchKodeDosen = $request->query('kode_dosen', '');
         $perPage = $request->query('per_page', 9);
 
-        // Mulai query dengan memfilter dosen yang id_jabatan_struktural-nya NULL
-        $query = Dosen::with(['kelompokKeahlian:id,nama']) // Eager load relasi yang dibutuhkan
+        $query = Dosen::with(['kelompokKeahlian:id,nama'])
             ->whereNull('id_jabatan_struktural');
 
-        // Terapkan kondisi pencarian umum (Nama atau NIP) jika ada
         $query->when($searchTerm, function ($q) use ($searchTerm) {
-            // Menggunakan closure untuk mengelompokkan kondisi OR
             return $q->where(function ($subQuery) use ($searchTerm) {
                 $subQuery->where('name', 'like', "%{$searchTerm}%")
                     ->orWhere('nip', 'like', "%{$searchTerm}%");
             });
         });
 
-        // Terapkan kondisi pencarian untuk Kode Dosen jika ada
         $query->when($searchKodeDosen, function ($q) use ($searchKodeDosen) {
-            // Asumsi kolom kode dosen adalah 'lecturer_code'
             return $q->where('lecturer_code', 'like', "%{$searchKodeDosen}%");
         });
 
-        // Urutkan hasil (opsional) dan lakukan paginasi
         $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json([
@@ -190,22 +165,17 @@ class DosenController extends Controller
 
     public function getDosenDenganJabatanStruktural(Request $request)
     {
-        // Ambil parameter pencarian dan paginasi
         $searchNama = $request->query('nama', '');
         $searchNip = $request->query('nip', '');
         $perPage = $request->query('per_page', 9);
 
-        // Mulai query dengan memfilter dosen yang id_jabatan_struktural-nya TIDAK NULL
         $query = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama'])
             ->whereNotNull('id_jabatan_struktural');
 
-        // Terapkan filter pencarian nama
         $query->when($searchNama, fn($q) => $q->where('name', 'like', "%{$searchNama}%"));
 
-        // Terapkan filter pencarian NIP
         $query->when($searchNip, fn($q) => $q->where('nip', 'like', "%{$searchNip}%"));
 
-        // Urutkan dan paginasi hasil
         $dosens = $query->orderBy('name', 'asc')->paginate($perPage);
 
         return response()->json([
@@ -358,7 +328,7 @@ class DosenController extends Controller
             'data' => [
                 'nama_dosen' => $dosen->name,
                 'kode_dosen' => $dosen->lecturer_code,
-                'jabatan' => $dosen->jabatanStruktural?->nama, // gunakan nama dari relasi
+                'jabatan' => $dosen->jabatanStruktural?->nama,
                 'home_base' => null,
                 'nip' => $dosen->nip,
                 'nidn' => $dosen->nidn,
@@ -374,7 +344,6 @@ class DosenController extends Controller
 
     public function assignJabatanStruktural(Request $request)
     {
-        // Validasi input
         $validatedData = $request->validate([
             'id_dosen' => 'required|exists:dosens,id',
             'id_jabatan_struktural' => 'required|exists:jabatan_strukturals,id',
@@ -398,7 +367,6 @@ class DosenController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => $message,
-                // 'data' => $dosen->load('jabatanStruktural'), // Muat relasi untuk respons
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -407,7 +375,6 @@ class DosenController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            // Log::error('Error assigning Jabatan Struktural to Dosen: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
@@ -446,7 +413,6 @@ class DosenController extends Controller
                 'errors' => $e->errors(),
             ], 422);
         } catch (\Exception $e) {
-            // Log::error('Error revoking Jabatan Struktural Dosen: ' . $e->getMessage() . ' | File: ' . $e->getFile() . ' | Line: ' . $e->getLine());
             return response()->json([
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server saat melepas jabatan.',
@@ -533,7 +499,6 @@ class DosenController extends Controller
 
     public function getLaporanBebanSksDosen(Request $request, $id_tahun_ajaran)
     {
-        // Validasi apakah tahun ajaran ada
         $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
         if (!$tahunAjaran) {
             return response()->json([
@@ -543,27 +508,21 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Ambil parameter pencarian dan paginasi dari request
-        $searchTerm = $request->query('search', ''); // Untuk mencari nama dosen
-        $perPage = $request->query('per_page', 10);  // Jumlah item per halaman, default 15
+        $searchTerm = $request->query('search', '');
+        $perPage = $request->query('per_page', 10);
 
-        // Mulai query builder untuk Dosen
         $dosenQuery = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks']);
 
-        // Terapkan filter pencarian jika ada searchTerm
         if (!empty($searchTerm)) {
             $dosenQuery->where('name', 'LIKE', "%{$searchTerm}%");
         }
 
-        // Lakukan paginasi pada query dosen
         $paginatedDosens = $dosenQuery->orderBy('name', 'asc')->paginate($perPage);
 
-        // Ambil semua program studi untuk iterasi (tetap diperlukan untuk setiap dosen dalam halaman)
-        $programStudis = ProgramStudi::select(['id', 'nama'])->get(); // 'nama' diganti 'name' sesuai contoh data Anda
+        $programStudis = ProgramStudi::select(['id', 'nama'])->get();
 
-        $maksimalSksMengajarDefault = 16; // Batas SKS mengajar normal
+        $maksimalSksMengajarDefault = 16;
 
-        // Transformasi data untuk dosen yang ada di halaman saat ini
         $laporanData = $paginatedDosens->getCollection()->map(function ($dosen) use ($id_tahun_ajaran, $programStudis, $maksimalSksMengajarDefault) {
             $konversi_sks_jabatan = 0;
             $nama_jabatan_struktural = null;
@@ -588,7 +547,6 @@ class DosenController extends Controller
                     ->sum('beban_sks');
 
                 if ($sksDiProdiIni > 0) {
-                    // Menggunakan $prodi->name (atau $prodi->nama jika itu nama kolomnya)
                     $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
                 }
             }
@@ -596,7 +554,7 @@ class DosenController extends Controller
             return [
                 'kode_dosen'        => $dosen->lecturer_code,
                 'nama_dosen'        => $dosen->name,
-                'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null, // 'nama' diganti 'name'
+                'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null,
                 'jfa'               => $dosen->jabatan_fungsional_akademik,
                 'jabatan_struktural' => $nama_jabatan_struktural,
                 'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
@@ -608,8 +566,7 @@ class DosenController extends Controller
             ];
         });
 
-        // Membuat respons paginasi manual untuk data yang sudah ditransformasi
-        $paginatedResponse = new \Illuminate\Pagination\LengthAwarePaginator(
+        $paginatedResponse = new LengthAwarePaginator(
             $laporanData,
             $paginatedDosens->total(),
             $paginatedDosens->perPage(),
@@ -620,13 +577,12 @@ class DosenController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Laporan Beban SKS Dosen untuk Tahun Ajaran ' . $tahunAjaran->tahun_ajaran . ' (' . $tahunAjaran->semester . ') berhasil dimuat.',
-            'data' => $paginatedResponse // Mengembalikan data yang sudah dipaginasi
+            'data' => $paginatedResponse
         ]);
     }
 
     public function getRiwayatPengajaran(Request $request, $id_dosen)
     {
-        // 1. Validasi apakah dosen ada
         $dosen = Dosen::find($id_dosen);
         if (!$dosen) {
             return response()->json([
@@ -635,48 +591,15 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // 2. Ambil semua plottingan untuk dosen ini dengan relasi yang dibutuhkan
-        // $riwayatPlottingan = PlottinganPengajaran::with([
-        //     'mappingKelasMatakuliah.matakuliah.pic',
-        //     'mappingKelasMatakuliah.tahunAjaran'
-        // ])
-        //     ->where('id_dosen', $id_dosen)
-        //     ->get();
-
-        // // 3. Transformasi data ke format yang diinginkan
-        // $formattedRiwayat = $riwayatPlottingan->map(function ($plot) {
-        //     $matakuliah = $plot->mappingKelasMatakuliah?->matakuliah;
-        //     $tahunAjaran = $plot->mappingKelasMatakuliah?->tahunAjaran;
-
-        //     return [
-        //         'nama_matakuliah'   => $matakuliah?->nama_matakuliah,
-        //         'pic_matakuliah'    => $matakuliah?->pic?->name,
-        //         'online_onsite'     => $matakuliah?->mode_perkuliahan,
-        //         'kelas'             => $plot->mappingKelasMatakuliah?->nama_kelas,
-        //         'kuota'             => $plot->mappingKelasMatakuliah?->kuota,
-        //         'periode'           => $tahunAjaran ? ($tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester) : null,
-        //     ];
-        // });
-
-        // 4. Kirim respons
-        // return response()->json([
-        //     'success' => true,
-        //     'message' => 'Riwayat pengajaran untuk dosen ' . $dosen->name . ' berhasil dimuat.',
-        //     'data' => $formattedRiwayat
-        // ]);
-
-        // Ambil parameter pencarian dan paginasi
         $searchTerm = $request->query('search', '');
         $perPage = $request->query('per_page', 15);
 
-        // 2. Mulai query untuk plottingan dosen ini
         $query = PlottinganPengajaran::with([
             'mappingKelasMatakuliah.matakuliah.pic',
             'mappingKelasMatakuliah.tahunAjaran'
         ])
             ->where('id_dosen', $id_dosen);
 
-        // Tambahkan kondisi pencarian jika ada search term
         if (!empty($searchTerm)) {
             $query->whereHas('mappingKelasMatakuliah.matakuliah', function ($matakuliahQuery) use ($searchTerm) {
                 $matakuliahQuery->where('nama_matakuliah', 'LIKE', "%{$searchTerm}%")
@@ -684,12 +607,9 @@ class DosenController extends Controller
             });
         }
 
-        // Lakukan paginasi
         $riwayatPlottingan = $query->latest()->paginate($perPage);
 
-        // 3. Transformasi data ke format yang diinginkan
         $formattedRiwayat = $riwayatPlottingan->getCollection()->map(function ($plot) {
-            // Menggunakan null-safe operator (?->) untuk keamanan jika ada relasi yang null
             $matakuliah = $plot->mappingKelasMatakuliah?->matakuliah;
             $tahunAjaran = $plot->mappingKelasMatakuliah?->tahunAjaran;
 
@@ -703,7 +623,6 @@ class DosenController extends Controller
             ];
         });
 
-        // Buat instance paginator baru dengan data yang sudah ditransformasi
         $paginatedFormattedData = new LengthAwarePaginator(
             $formattedRiwayat,
             $riwayatPlottingan->total(),
@@ -712,7 +631,6 @@ class DosenController extends Controller
             ['path' => $request->url(), 'query' => $request->query()]
         );
 
-        // 4. Kirim respons
         return response()->json([
             'success' => true,
             'message' => 'Riwayat pengajaran untuk dosen ' . $dosen->name . ' berhasil dimuat.',
@@ -720,10 +638,8 @@ class DosenController extends Controller
         ]);
     }
 
-    // public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen) {}
     public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen)
     {
-        // Langkah 1: Cari tahun ajaran yang aktif
         $tahunAjaranAktif = TahunAjaran::where('status', true)->first();
 
         if (!$tahunAjaranAktif) {
@@ -733,7 +649,6 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Langkah 2: Cari dosen berdasarkan ID dan eager load relasi jabatan
         $dosen = Dosen::with('jabatanStruktural')->find($id_dosen);
 
         if (!$dosen) {
@@ -743,72 +658,19 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Langkah 3: Lakukan perhitungan SKS
         $konversi_sks_jabatan = 0;
         if ($dosen->jabatanStruktural) {
             $konversi_sks_jabatan = (int)$dosen->jabatanStruktural->konversi_sks;
         }
 
-        $maksimalTotalSks = 16; // Batas total SKS
+        $maksimalTotalSks = 16;
         $maxAjarSks = $maksimalTotalSks - $konversi_sks_jabatan;
-        $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks; // Pastikan tidak negatif
+        $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks;
 
-        // Panggil method dari model Dosen untuk menghitung SKS mengajar yang sudah diplot
         $totalSksMengajar = $dosen->getTotalSksMengajarPadaTahunAjaran($tahunAjaranAktif->id);
 
-        // Hitung sisa SKS yang bisa diambil
         $sisaSksMengajar = $maxAjarSks - $totalSksMengajar;
 
-        // Opsi 1
-        // Langkah 4: Siapkan data untuk respons
-        // $responseData = [
-        //     'id_dosen' => $dosen->id,
-        //     'nama_dosen' => $dosen->name,
-        //     'info_tahun_ajaran_aktif' => [
-        //         'id' => $tahunAjaranAktif->id,
-        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
-        //     ],
-        //     'perhitungan_sks' => [
-        //         'sks_ekuivalen_jabatan_struktural' => $konversi_sks_jabatan,
-        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
-        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-        //     ]
-        // ];
-
-        // Opsi 2
-        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
-        // $plottingans = $dosen->plottinganPengajarans()
-        //     ->whereHas('mappingKelasMatakuliah', function ($query) use ($tahunAjaranAktif) {
-        //         $query->where('id_tahun_ajaran', $tahunAjaranAktif->id);
-        //     })
-        //     ->with('mappingKelasMatakuliah.programStudi:id,nama') // Eager load relasi Program Studi
-        //     ->get();
-
-        // $rincianSksPerProdi = $plottingans->groupBy('mappingKelasMatakuliah.programStudi.nama')
-        //     ->map(function ($items) {
-        //         return $items->sum('beban_sks');
-        //     });
-
-        // Langkah 4: Siapkan data untuk respons
-        // $responseData = [
-        //     'id_dosen' => $dosen->id,
-        //     'nama_dosen' => $dosen->name,
-        //     'info_tahun_ajaran_aktif' => [
-        //         'id' => $tahunAjaranAktif->id,
-        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
-        //     ],
-        //     'perhitungan_sks' => [
-        //         'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
-        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
-        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-        //         'rincian_sks_per_prodi' => $rincianSksPerProdi->isNotEmpty() ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
-        //     ]
-        // ];
-
-        // Opsi 3
-        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
         $programStudis = ProgramStudi::select(['id', 'nama'])->get();
         $rincianSksPerProdi = [];
 
@@ -820,10 +682,8 @@ class DosenController extends Controller
                 })
                 ->sum('beban_sks');
 
-            // Tambahkan semua prodi ke array, dengan SKS 0 jika tidak mengajar
             $rincianSksPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
         }
-        // Langkah 4: Siapkan data untuk respons
         $responseData = [
             'id_dosen' => $dosen->id,
             'nama_dosen' => $dosen->name,
@@ -840,7 +700,6 @@ class DosenController extends Controller
             ]
         ];
 
-        // Langkah 5: Kembalikan respons JSON
         return response()->json([
             'success' => true,
             'message' => 'Rincian beban SKS dosen berhasil dimuat.',
@@ -849,10 +708,8 @@ class DosenController extends Controller
     }
     public function getBebanSksDosenByIdDosenandIdTahunAjaran($id_dosen, $id_tahun_ajaran)
     {
-        // Langkah 1: Cari tahun ajaran sesuai dengan id tahun ajaran
         $tahunAjaran = TahunAjaran::where('id', $id_tahun_ajaran)->first();
 
-        // if (!$tahunAjaranAktif) {
         if (!$tahunAjaran) {
             return response()->json([
                 'success' => false,
@@ -860,7 +717,6 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Langkah 2: Cari dosen berdasarkan ID dan eager load relasi jabatan
         $dosen = Dosen::with('jabatanStruktural')->find($id_dosen);
 
         if (!$dosen) {
@@ -870,72 +726,19 @@ class DosenController extends Controller
             ], 404);
         }
 
-        // Langkah 3: Lakukan perhitungan SKS
         $konversi_sks_jabatan = 0;
         if ($dosen->jabatanStruktural) {
             $konversi_sks_jabatan = (int)$dosen->jabatanStruktural->konversi_sks;
         }
 
-        $maksimalTotalSks = 16; // Batas total SKS
+        $maksimalTotalSks = 16;
         $maxAjarSks = $maksimalTotalSks - $konversi_sks_jabatan;
-        $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks; // Pastikan tidak negatif
+        $maxAjarSks = $maxAjarSks < 0 ? 0 : $maxAjarSks;
 
-        // Panggil method dari model Dosen untuk menghitung SKS mengajar yang sudah diplot
         $totalSksMengajar = $dosen->getTotalSksMengajarPadaTahunAjaran($tahunAjaran->id);
 
-        // Hitung sisa SKS yang bisa diambil
         $sisaSksMengajar = $maxAjarSks - $totalSksMengajar;
 
-        // Opsi 1
-        // Langkah 4: Siapkan data untuk respons
-        // $responseData = [
-        //     'id_dosen' => $dosen->id,
-        //     'nama_dosen' => $dosen->name,
-        //     'info_tahun_ajaran_aktif' => [
-        //         'id' => $tahunAjaranAktif->id,
-        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
-        //     ],
-        //     'perhitungan_sks' => [
-        //         'sks_ekuivalen_jabatan_struktural' => $konversi_sks_jabatan,
-        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
-        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-        //     ]
-        // ];
-
-        // Opsi 2
-        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
-        // $plottingans = $dosen->plottinganPengajarans()
-        //     ->whereHas('mappingKelasMatakuliah', function ($query) use ($tahunAjaranAktif) {
-        //         $query->where('id_tahun_ajaran', $tahunAjaranAktif->id);
-        //     })
-        //     ->with('mappingKelasMatakuliah.programStudi:id,nama') // Eager load relasi Program Studi
-        //     ->get();
-
-        // $rincianSksPerProdi = $plottingans->groupBy('mappingKelasMatakuliah.programStudi.nama')
-        //     ->map(function ($items) {
-        //         return $items->sum('beban_sks');
-        //     });
-
-        // Langkah 4: Siapkan data untuk respons
-        // $responseData = [
-        //     'id_dosen' => $dosen->id,
-        //     'nama_dosen' => $dosen->name,
-        //     'info_tahun_ajaran_aktif' => [
-        //         'id' => $tahunAjaranAktif->id,
-        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
-        //     ],
-        //     'perhitungan_sks' => [
-        //         'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
-        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
-        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-        //         'rincian_sks_per_prodi' => $rincianSksPerProdi->isNotEmpty() ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
-        //     ]
-        // ];
-
-        // Opsi 3
-        // Langkah Tambahan: Hitung rincian SKS mengajar per program studi
         $programStudis = ProgramStudi::select(['id', 'nama'])->get();
         $rincianSksPerProdi = [];
 
@@ -947,10 +750,8 @@ class DosenController extends Controller
                 })
                 ->sum('beban_sks');
 
-            // Tambahkan semua prodi ke array, dengan SKS 0 jika tidak mengajar
             $rincianSksPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
         }
-        // Langkah 4: Siapkan data untuk respons
         $responseData = [
             'id_dosen' => $dosen->id,
             'nama_dosen' => $dosen->name,
@@ -967,7 +768,6 @@ class DosenController extends Controller
             ]
         ];
 
-        // Langkah 5: Kembalikan respons JSON
         return response()->json([
             'success' => true,
             'message' => 'Rincian beban SKS dosen berhasil dimuat.',

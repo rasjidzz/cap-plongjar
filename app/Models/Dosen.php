@@ -17,6 +17,7 @@ class Dosen extends Model
         'id_jabatan_struktural',
         'email',
         'status_pegawai',
+        'status_dosen',
         'pendidikan_terakhir',
         'nidn',
         'id_kelompok_keahlian',
