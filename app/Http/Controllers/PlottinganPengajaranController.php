@@ -130,7 +130,7 @@ class PlottinganPengajaranController extends Controller
                 }),
             ],
             'id_mapping_kelas_matakuliah' => 'required|exists:mapping_kelas_matakuliahs,id',
-            'beban_sks' => 'nullable|integer|min:1', // Membuat beban_sks opsional di validasi awal
+            'beban_sks' => 'nullable|integer|min:1',
         ], [
             'id_dosen.unique' => 'Kombinasi Dosen dan Kelas Mata Kuliah ini sudah diplot sebelumnya.',
             'beban_sks.integer' => 'Beban SKS harus berupa angka.',
@@ -148,7 +148,6 @@ class PlottinganPengajaranController extends Controller
                 ], 404);
             }
 
-            // $matakuliah = Matakuliah::find($mapping_matkul->id_matakuliah);
             $matakuliah = Matakuliah::with('pic')->find($mapping_matkul->id_matakuliah);
 
             if (!$matakuliah) {
@@ -159,10 +158,6 @@ class PlottinganPengajaranController extends Controller
             }
 
             // Proses Validasi Otorisasi Role
-            // Cek Apakah User yang sedang login memiliki role "KelompokKeahlian" atau "ProgramStudi"
-            // dan ProgramStudi atau KelompokKeahlian apa ?
-            // Jika nama ProgramStudi atau KelompokKeahlian nya tidak sama dengan $pic, maka tidak bisa lanjut
-            // Bisa dilihat dari tabel "user_roles" memiliki role_id, roleable_id, dan roleable_type
 
             $user = $request->user();
             $user->loadMissing('roles.pivot');
@@ -179,10 +174,8 @@ class PlottinganPengajaranController extends Controller
             $userHasRelevantRole = false;
 
             foreach ($user->roles as $role) {
-                // ID Role: 2 untuk ProgramStudi, 3 untuk KelompokKeahlian
                 if ($role->id == 2) { // Role ProgramStudi
                     $userHasRelevantRole = true;
-                    // Pastikan pivot dan atribut-atributnya ada sebelum diakses
                     if (
                         isset($role->pivot, $role->pivot->roleable_type, $role->pivot->roleable_id) &&
                         ($role->pivot->roleable_type === ProgramStudi::class || $role->pivot->roleable_type === 'App\\Models\\ProgramStudi')
@@ -193,9 +186,8 @@ class PlottinganPengajaranController extends Controller
                             break;
                         }
                     }
-                } elseif ($role->id == 3) { // Role KelompokKeahlian
+                } elseif ($role->id == 3) {
                     $userHasRelevantRole = true;
-                    // Pastikan pivot dan atribut-atributnya ada sebelum diakses
                     if (
                         isset($role->pivot, $role->pivot->roleable_type, $role->pivot->roleable_id) &&
                         ($role->pivot->roleable_type === KelompokKeahlian::class || $role->pivot->roleable_type === 'App\\Models\\KelompokKeahlian')
@@ -218,15 +210,14 @@ class PlottinganPengajaranController extends Controller
             //     ]
             // ], 201);
 
-            // Jika user memiliki role ProgramStudi atau KelompokKeahlian tapi tidak ada yang cocok dengan PIC
             if ($userHasRelevantRole && !$isAuthorized) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
-                ], 403); // 403 Forbidden
+                ], 403);
             }
 
-            if (!$isAuthorized && $userHasRelevantRole) { // Hanya blok jika user punya role relevan tapi tidak cocok
+            if (!$isAuthorized && $userHasRelevantRole) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
@@ -235,20 +226,18 @@ class PlottinganPengajaranController extends Controller
 
             $isSuperAdmin = false;
             foreach ($user->roles as $role) {
-                if ($role->id == 1) { // ID 1 untuk Superadmin
+                if ($role->id == 1) {
                     $isSuperAdmin = true;
                     break;
                 }
             }
 
-            if (!$isSuperAdmin && !$isAuthorized && $userHasRelevantRole) { // Jika bukan superadmin, dan role relevan ada tapi tidak cocok PIC
+            if (!$isSuperAdmin && !$isAuthorized && $userHasRelevantRole) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
                 ], 403);
             } elseif (!$isSuperAdmin && !$userHasRelevantRole) {
-                // Jika bukan superadmin dan tidak punya role ProgramStudi/KK sama sekali
-                // Ini seharusnya sudah ditangani oleh middleware di route, tapi sebagai pengaman tambahan
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak memiliki role yang sesuai untuk melakukan aksi ini.',
@@ -275,7 +264,6 @@ class PlottinganPengajaranController extends Controller
 
             if ($mapping_matkul->team_teaching === 1) {
                 // TEAM TEACHING LOGIC
-                // Untuk team teaching, 'beban_sks' dari input wajib ada
                 if (!$request->filled('beban_sks')) {
                     return response()->json([
                         'success' => false,
@@ -285,9 +273,8 @@ class PlottinganPengajaranController extends Controller
                         ]
                     ], 422);
                 }
-                $input_beban_sks = (int)$request->input('beban_sks'); // Ambil dari request langsung
+                $input_beban_sks = (int)$request->input('beban_sks');
 
-                // Validasi 1: Beban SKS yang diinput untuk dosen ini tidak boleh melebihi total SKS mata kuliah
                 if ($input_beban_sks > $sks_matakuliah) {
                     return response()->json([
                         'success' => false,
@@ -298,7 +285,6 @@ class PlottinganPengajaranController extends Controller
                     ], 422);
                 }
 
-                // Hitung total SKS yang sudah diplot ke kelas ini oleh dosen lain
                 $total_sks_dosen_lain_di_kelas_ini = PlottinganPengajaran::where('id_mapping_kelas_matakuliah', $mapping_matkul->id)
                     ->sum('beban_sks');
 
@@ -316,8 +302,6 @@ class PlottinganPengajaranController extends Controller
                 $dataToCreate['beban_sks'] = $input_beban_sks;
             } else {
                 // TIDAK TEAM TEACHING (SOLO)
-                // Beban SKS otomatis sama dengan SKS mata kuliah, input 'beban_sks' dari request diabaikan.
-
                 $existingPlottinganSolo = PlottinganPengajaran::where('id_mapping_kelas_matakuliah', $mapping_matkul->id)->first();
                 $input_beban_sks = $sks_matakuliah;
                 if ($existingPlottinganSolo) {
@@ -328,13 +312,11 @@ class PlottinganPengajaranController extends Controller
                         'errors' => [
                             'id_mapping_kelas_matakuliah' => ['Kelas ini sudah memiliki dosen pengajar (mode solo).']
                         ]
-                    ], 422); // Konflik atau Unprocessable
+                    ], 422);
                 }
 
-                // Beban SKS otomatis sama dengan SKS mata kuliah, input 'beban_sks' dari request diabaikan jika ada.
                 $dataToCreate['beban_sks'] = $sks_matakuliah;
             }
-            // Validasi 2 -> Menghitung maksimal sks mengajar seorang dosen jika memiliki jabatan struktural
             $dosenPengajar = Dosen::find($validatedData['id_dosen']);
             $konversi_sks_jabatan = 0;
             if ($dosenPengajar->id_jabatan_struktural !== null) {
@@ -348,12 +330,9 @@ class PlottinganPengajaranController extends Controller
                 // DEBUG
             }
 
-            // Validasi 3 -> Menghitung maksimal sks mengajar seorang dosen
-
             $id_tahun_ajaran = (int)$mapping_matkul->id_tahun_ajaran;
             $maksimalSksDosen = 16;
             $totalSksMengajarDosen = $dosenPengajar->getTotalSksMengajarPadaTahunAjaran($id_tahun_ajaran);
-            // $totalSksMengajarDosen = $dosenPengajar->getTotalSKS($id_tahun_ajaran);
 
             // DEBUG
             // return response()->json([
@@ -381,7 +360,7 @@ class PlottinganPengajaranController extends Controller
                     'errors' => [
                         'id_dosen' => ['Total SKS dosen akan melebihi batas maksimal.']
                     ]
-                ], 422); // Mengembalikan error 422 Unprocessable Entity
+                ], 422);
             }
 
             $plottingan = PlottinganPengajaran::create($dataToCreate);
@@ -411,7 +390,6 @@ class PlottinganPengajaranController extends Controller
 
     public function getHasilPlottinganPengajaranByTahunAjaranId($id_tahun_ajaran)
     {
-        // Validasi apakah tahun ajaran ada (opsional tapi baik)
         $tahunAjaranExists = TahunAjaran::find($id_tahun_ajaran);
         if (!$tahunAjaranExists) {
             return response()->json([
@@ -424,17 +402,16 @@ class PlottinganPengajaranController extends Controller
         $plottinganItems = PlottinganPengajaran::with([
             'dosen:id,name,lecturer_code',
             'mappingKelasMatakuliah' => function ($query) {
-                $query->select([ // Pilih kolom spesifik dari mapping_kelas_matakuliahs
+                $query->select([
                     'id',
                     'id_matakuliah',
                     'id_tahun_ajaran',
                     'nama_kelas',
                     'kuota',
-                    'team_teaching' // Kolom team_teaching dari mapping_kelas_matakuliahs
+                    'team_teaching'
                 ])
                     ->with([
                         'matakuliah' => function ($matakuliahQuery) {
-                            // Pilih kolom spesifik dari matakuliahs
                             $matakuliahQuery->select([
                                 'id',
                                 'nama_matakuliah',
@@ -446,25 +423,21 @@ class PlottinganPengajaranController extends Controller
                                 'tingkat_matakuliah',
                                 'hour_target',
                                 'matakuliah_eksepsi'
-                                // 'tingkat_matakuliah', 'hour_target', 'matakuliah_eksepsi' // Jika ada
-                            ])->with('pic:id,name'); // Relasi pic dari matakuliah
+                            ])->with('pic:id,name');
                         },
-                        'tahunAjaran:id,tahun_ajaran,semester', // Relasi tahunAjaran dari mapping
+                        'tahunAjaran:id,tahun_ajaran,semester',
                         'koordinatorMatakuliah' => function ($kmQuery) {
-                            // Relasi koordinatorMatakuliah dari mapping
                             $kmQuery->select(['id', 'id_dosen', 'id_mapping_kelas_matakuliah'])
-                                ->with('dosen:id,name,lecturer_code'); // Dosen koordinator
+                                ->with('dosen:id,name,lecturer_code');
                         }
                     ]);
             }
         ])
             ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran) {
-                // Filter PlottinganPengajaran berdasarkan id_tahun_ajaran di MappingKelasMatakuliah
                 $query->where('id_tahun_ajaran', $id_tahun_ajaran);
             })
             ->get();
 
-        // Transformasi data ke format yang diinginkan
         $formattedData = $plottinganItems->map(function ($plot) {
             $mkm = $plot->mappingKelasMatakuliah;
             $matakuliah = $mkm ? $mkm->matakuliah : null;
@@ -475,29 +448,20 @@ class PlottinganPengajaranController extends Controller
             $tahunAjaranInfo = $mkm ? $mkm->tahunAjaran : null;
 
             return [
-                // 'id_plottingan'                 => $plot->id, // ID dari plottingan itu sendiri
-                // 'id_mapping_kelas_matakuliah'   => $mkm ? $mkm->id : null,
-                // 'id_matakuliah'                 => $matakuliah ? $matakuliah->id : null,
-                // 'id_dosen_pengajar'             => $dosenPengajar ? $dosenPengajar->id : null, // Tambahan: ID dosen pengajar
-                // 'nama_dosen_pengajar'           => $dosenPengajar ? $dosenPengajar->name : null, // Tambahan: nama dosen pengajar
-                // 'sks_kredit'                    => $matakuliah ? $matakuliah->sks : null,
-                // 'kuota_kelas'                   => $mkm ? $mkm->kuota : null, // Tambahan: kuota kelas
-                // 'id_dosen_koordinator'          => $dosenKoordinator ? $dosenKoordinator->id : null, // Tambahan: ID dosen koordinator
-                // 'nama_dosen_koordinator'        => $dosenKoordinator ? $dosenKoordinator->name : null, // Tambahan: nama dosen koordinator
-                'kode_matakuliah'                   => $matakuliah ? $matakuliah->kode_matkul : null, // Tambahan: kode matkul
+                'kode_matakuliah'                   => $matakuliah ? $matakuliah->kode_matkul : null,
                 'nama_matakuliah'               => $matakuliah ? $matakuliah->nama_matakuliah : null,
                 'pic'                      => $pic ? $pic->name : null,
                 'kode_dosen_pengajar'           => $dosenPengajar ? $dosenPengajar->lecturer_code : null,
                 'mandatory_status'              => $matakuliah ? $matakuliah->mandatory_status : null,
-                'tingkat_matakuliah'            => $matakuliah->tingkat_matakuliah ?? null, // Placeholder, ganti jika ada fieldnya
-                'beban_sks_dosen_pengajar'      => $plot->beban_sks, // Tambahan: SKS yang dibebankan ke dosen ini
+                'tingkat_matakuliah'            => $matakuliah->tingkat_matakuliah ?? null,
+                'beban_sks_dosen_pengajar'      => $plot->beban_sks,
                 'nama_kelas'                    => $mkm ? $mkm->nama_kelas : null,
                 'praktikum'                     => $matakuliah ? ($matakuliah->praktikum ? 'Yes' : 'No') : null,
                 'kode_dosen_koordinator'        => $dosenKoordinator ? $dosenKoordinator->lecturer_code : null,
-                'hour_target'                   => $matakuliah->hour_target ?? null, // Placeholder, ganti jika ada fieldnya
+                'hour_target'                   => $matakuliah->hour_target ?? null,
                 'tahun_ajaran'          => $tahunAjaranInfo ? ($tahunAjaranInfo->tahun_ajaran . ' - ' . $tahunAjaranInfo->semester) : null,
                 'team_teaching_kelas'           => $mkm ? ($mkm->team_teaching ? 'Yes' : 'No') : null,
-                'matakuliah_eksepsi'            => $matakuliah->matakuliah_eksepsi ?? null, // Placeholder, ganti jika ada fieldnya
+                'matakuliah_eksepsi'            => $matakuliah->matakuliah_eksepsi ?? null,
             ];
         });
 
@@ -536,11 +500,8 @@ class PlottinganPengajaranController extends Controller
 
     public function exportHasilPlottinganToExcel($id_tahun_ajaran)
     {
-        // Validasi apakah tahun ajaran ada (opsional tapi baik)
         $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
         if (!$tahunAjaran) {
-            // Anda bisa mengembalikan error 404 atau pesan lain jika tahun ajaran tidak ditemukan
-            // Untuk export, biasanya lebih baik menghentikan proses jika data sumber tidak valid
             abort(404, 'Tahun Ajaran tidak ditemukan.');
         }
 
