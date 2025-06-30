@@ -345,8 +345,8 @@ class DosenController extends Controller
     public function assignJabatanStruktural(Request $request)
     {
         $validatedData = $request->validate([
-            'id_dosen' => 'required|exists:dosens,id',
-            'id_jabatan_struktural' => 'required|exists:jabatan_strukturals,id',
+            'id_dosen' => 'required|integer|exists:dosens,id',
+            'id_jabatan_struktural' => 'required|integer|exists:jabatan_strukturals,id',
         ]);
 
         try {
