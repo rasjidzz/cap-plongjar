@@ -47,7 +47,7 @@ class MappingKelasMatakuliahController extends Controller
                 $matakuliahQuery->with('pic:id,name');
             },
             'tahunAjaran:id,tahun_ajaran,semester',
-            'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen',
+            'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen,beban_sks',
             'plottinganPengajarans.dosen:id,name,lecturer_code'
         ])
             ->where('id_matakuliah', $id_matakuliah)
@@ -353,6 +353,61 @@ class MappingKelasMatakuliahController extends Controller
         $query->where('id_matakuliah', $id_matakuliah)
             ->where('id_tahun_ajaran', $id_tahun_ajaran)
             ->where('id_program_studi', $userProdiId);
+
+        $data = $query->orderBy('nama_kelas', 'asc')->get();
+
+        $formattedData = $data->map(function ($mapping) {
+            return [
+                'nama_kelas' => $mapping->nama_kelas,
+                'kuota' => $mapping->kuota,
+                'team_teaching' => (bool)$mapping->team_teaching,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data mapping kelas mata kuliah berhasil dimuat.',
+            'data' => $formattedData
+        ]);
+    }
+    public function getMappingByMatkulTahunAjaranAndAuthKK(Request $request, $id_matakuliah, $id_tahun_ajaran)
+    {
+        $user = $request->user();
+        $userKelompokKeahlianId = null;
+
+        $user->loadMissing('roles');
+
+        foreach ($user->roles as $role) {
+            if ($role->name === 'KelompokKeahlian' && isset($role->pivot->roleable_id)) {
+                $userKelompokKeahlianId = $role->pivot->roleable_id;
+                break;
+            }
+        }
+
+        // return response()->json([
+        //     'success' => true,
+        //     'message' => 'Success, Test Debug',
+        //     'dataUser' => $user,
+        // ], 200);
+
+        if (is_null($userKelompokKeahlianId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Kelompok Keahlian manapun.',
+            ], 403); // 403 Forbidden
+        }
+
+        $query = MappingKelasMatakuliah::query()->with([
+            'matakuliah.pic',
+            'tahunAjaran',
+            'programStudi',
+            'plottinganPengajarans.dosen',
+            'koordinatorMatakuliah.dosen',
+        ]);
+
+        $query->where('id_matakuliah', $id_matakuliah)
+            ->where('id_tahun_ajaran', $id_tahun_ajaran)
+            ->where('id_program_studi', $userKelompokKeahlianId);
 
         $data = $query->orderBy('nama_kelas', 'asc')->get();
 
