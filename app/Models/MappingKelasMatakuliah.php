@@ -12,6 +12,7 @@ class MappingKelasMatakuliah extends Model
         'id_program_studi',
         'nama_kelas',
         'kuota',
+        'team_teaching'
     ];
 
     public function matakuliah()
