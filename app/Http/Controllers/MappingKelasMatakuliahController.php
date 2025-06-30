@@ -42,7 +42,10 @@ class MappingKelasMatakuliahController extends Controller
     public function getMappingKelasMatkulByIdMatkulandIdTahunAjaran($id_matakuliah, $id_tahunajaran)
     {
         $data = MappingKelasMatakuliah::with([
-            'matakuliah:id,kode_matkul,nama_matakuliah,sks', // Memuat detail mata kuliah
+            // 'matakuliah:id,kode_matkul,nama_matakuliah,sks,praktikum,mode_perkuliahan', // Memuat detail mata kuliah
+            'matakuliah' => function ($matakuliahQuery) {
+                $matakuliahQuery->with('pic:id,name'); // Eager load relasi 'pic' dan pilih kolomnya
+            },
             'tahunAjaran:id,tahun_ajaran,semester',         // Memuat detail tahun ajaran
             'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen', // Memuat plottingan
             'plottinganPengajarans.dosen:id,name,lecturer_code' // Memuat dosen dari plottingan
@@ -217,6 +220,56 @@ class MappingKelasMatakuliahController extends Controller
                 // 'created_mappings_before_error' => $createdMappings // Opsional, untuk debug
             ], 500);
         }
+    }
+
+    public function getMappingByMatkulTahunAjaranAndAuthProdi(Request $request, $id_matakuliah, $id_tahun_ajaran)
+    {
+        $user = $request->user();
+        $userProdiId = null;
+
+        $user->loadMissing('roles');
+
+        foreach ($user->roles as $role) {
+            if ($role->name === 'ProgramStudi' && isset($role->pivot->roleable_id)) {
+                $userProdiId = $role->pivot->roleable_id;
+                break;
+            }
+        }
+
+        if (is_null($userProdiId)) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Program Studi manapun.',
+            ], 403); // 403 Forbidden
+        }
+
+        $query = MappingKelasMatakuliah::query()->with([
+            'matakuliah.pic',
+            'tahunAjaran',
+            'programStudi',
+            'plottinganPengajarans.dosen',
+            'koordinatorMatakuliah.dosen',
+        ]);
+
+        $query->where('id_matakuliah', $id_matakuliah)
+            ->where('id_tahun_ajaran', $id_tahun_ajaran)
+            ->where('id_program_studi', $userProdiId); // Filter berdasarkan prodi user
+
+        $data = $query->orderBy('nama_kelas', 'asc')->get();
+
+        $formattedData = $data->map(function ($mapping) {
+            return [
+                'nama_kelas' => $mapping->nama_kelas,
+                'kuota' => $mapping->kuota,
+                'team_teaching' => (bool)$mapping->team_teaching,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Data mapping kelas mata kuliah berhasil dimuat.',
+            'data' => $formattedData
+        ]);
     }
     /**
      * Display the specified resource.

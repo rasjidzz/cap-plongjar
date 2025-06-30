@@ -17,6 +17,7 @@ class Dosen extends Model
         'id_jabatan_struktural',
         'email',
         'status_pegawai',
+        'status_dosen',
         'pendidikan_terakhir',
         'nidn',
         'id_kelompok_keahlian',
@@ -49,11 +50,11 @@ class Dosen extends Model
     }
     public function getTotalSksMengajarPadaTahunAjaran(int $id_tahun_ajaran): int
     {
-        $totalSks = $this->plottinganPengajarans() // Memulai dari relasi plottinganPengajarans milik dosen ini
+        $totalSks = $this->plottinganPengajarans()
             ->whereHas('mappingKelasMatakuliah', function ($query) use ($id_tahun_ajaran) {
                 $query->where('id_tahun_ajaran', $id_tahun_ajaran);
             })
-            ->sum('beban_sks'); // Menjumlahkan kolom 'beban_sks' dari hasil plottingan yang sudah terfilter.
-        return (int) $totalSks; // Mengembalikan hasil sebagai integer.
+            ->sum('beban_sks');
+        return (int) $totalSks;
     }
 }

@@ -344,6 +344,59 @@ class KoordinatorMatakuliahController extends Controller
 
     public function destroy(KoordinatorMatakuliah $koordinatorMatakuliah)
     {
-        //
+        try {
+            $koordinatorMatakuliah->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Koordinator mata kuliah berhasil dihapus (revoke).'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus penetapan koordinator karena terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+    public function revokeKoordinatorByProgramStudi(Request $request)
+    {
+        $validated = $request->validate([
+            'id_matakuliah'   => 'required|integer|exists:matakuliahs,id',
+            'id_tahun_ajaran' => 'required|integer|exists:tahun_ajarans,id',
+            'id_program_studi' => 'required|integer|exists:program_studis,id',
+        ]);
+        DB::beginTransaction();
+        try {
+            $mappingIds = MappingKelasMatakuliah::where('id_matakuliah', $validated['id_matakuliah'])
+                ->where('id_tahun_ajaran', $validated['id_tahun_ajaran'])
+                ->where('id_program_studi', $validated['id_program_studi'])
+                ->pluck('id');
+
+            if ($mappingIds->isEmpty()) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Tidak ada kelas yang cocok untuk di-revoke koordinatornya.',
+                    'deleted_count' => 0,
+                ], 200);
+            }
+
+            $deletedCount = KoordinatorMatakuliah::whereIn('id_mapping_kelas_matakuliah', $mappingIds)
+                ->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Semua penetapan koordinator untuk mata kuliah ini berhasil dihapus.',
+                'deleted_count' => $deletedCount
+            ], 200);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server saat menghapus penetapan koordinator.',
+            ], 500);
+        }
     }
 }
