@@ -40,7 +40,7 @@ class MappingKelasMatakuliahController extends Controller
         ]);
     }
 
-    public function getMappingKelasMatkulByIdMatkulandIdTahunAjaran($id_matakuliah, $id_tahunajaran)
+    public function getMappingKelasMatkulByIdMatkulandIdTahunAjaran($id_matakuliah, $id_tahunajaran) // ** ini base
     {
         $data = MappingKelasMatakuliah::with([
             'matakuliah' => function ($matakuliahQuery) {
@@ -70,13 +70,26 @@ class MappingKelasMatakuliahController extends Controller
         ]);
     }
 
-    public function getMappingKelasMatakuliahByIdMatakuliahIdTahunAjaranandIdProgramStudi($id_matakuliah, $id_tahun_ajaran, $id_program_studi)
+    public function getMappingKelasMatakuliahByIdMatakuliahIdTahunAjaranandIdProgramStudi($id_matakuliah, $id_tahun_ajaran, $id_program_studi) // ** ini ganti
     {
-        $data = MappingKelasMatakuliah::with(['matakuliah', 'tahunAjaran', 'programStudi'])
+        // $data = MappingKelasMatakuliah::with(['matakuliah', 'tahunAjaran', 'programStudi'])
+        //     ->where('id_matakuliah', $id_matakuliah)
+        //     ->where('id_tahun_ajaran', $id_tahun_ajaran)
+        //     ->where('id_program_studi', $id_program_studi)
+        //     ->get();
+        $data = MappingKelasMatakuliah::with([
+            'matakuliah' => function ($matakuliahQuery) {
+                $matakuliahQuery->with('pic:id,name');
+            },
+            'tahunAjaran:id,tahun_ajaran,semester',
+            'plottinganPengajarans:id,id_mapping_kelas_matakuliah,id_dosen',
+            'plottinganPengajarans.dosen:id,name,lecturer_code'
+        ])
             ->where('id_matakuliah', $id_matakuliah)
             ->where('id_tahun_ajaran', $id_tahun_ajaran)
-            ->where('id_program_studi', $id_program_studi)
+            ->orderBy('nama_kelas', 'asc')
             ->get();
+
         if ($data->isEmpty()) {
             return response()->json([
                 'success' => true,
