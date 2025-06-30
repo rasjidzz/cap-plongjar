@@ -260,16 +260,6 @@ class KoordinatorMatakuliahController extends Controller
                     'message' => 'Anda tidak ter-assign ke Program Studi atau Kelompok Keahlian manapun.',
                 ], 403);
             }
-            // Debug
-            // return response()->json([
-            //     'success' => true, // Dianggap sukses karena request valid, hanya saja tidak ada data untuk diubah
-            //     'message' => 'Masuk Sini',
-            //     'data' => [
-            //         $programStudi,
-            //         $validatedData
-            //     ]
-            // ], 200);
-            // Debug
 
             // 2. Ambil semua MappingKelasMatakuliah berdasarkan id_program_studi dan id_tahun_ajaran
             $mappingsToProcess = MappingKelasMatakuliah::where('id_program_studi', $id_program_studi_filter)
@@ -295,7 +285,7 @@ class KoordinatorMatakuliahController extends Controller
                     ],
                     [
                         // Data yang akan diisi atau diupdate:
-                        'id_dosen' => $id_dosen_koordinator,
+                        'id_dosen' => $id_dosen_koordinator,    
                     ]
                 );
                 // Anda bisa memilih untuk tidak me-load relasi di sini untuk respons yang lebih cepat
