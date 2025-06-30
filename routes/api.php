@@ -165,7 +165,7 @@ Route::prefix('v1')->group(function () {
 
 
 
-Route::get('/testgetdatadosen', [DosenController::class, 'index']);
+// Route::get('/testgetdatadosen', [DosenController::class, 'index']);
 
 Route::fallback(function () {
     return response()->json([
