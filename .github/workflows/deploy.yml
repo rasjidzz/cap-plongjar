@@ -22,7 +22,6 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            set -e
             cd ${{ secrets.PROJECT_PATH }}
 
             cd backend
