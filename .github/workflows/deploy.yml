@@ -28,7 +28,9 @@ jobs:
 
             echo "✅ Now in $(pwd) directory"
 
-            git checkout development
+            # Discard local changes and force pull
+            git reset --hard origin/development
+            git clean -df
             git pull origin development
 
             echo "✅ Code updated from development branch"
