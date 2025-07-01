@@ -21,8 +21,8 @@ return [
 
     'allowed_origins' => [
         env('FRONTEND_URL',  'http://localhost:4200',),
-        'https://siplongjar.com',
-        'https://www.siplongjar.com'
+        'http://siplongjar.com',
+        'http://www.siplongjar.com'
     ],
 
     'allowed_origins_patterns' => [],
