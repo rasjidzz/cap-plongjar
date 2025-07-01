@@ -45,7 +45,7 @@ class UserSeeder extends Seeder
         //     'password' => Hash::make('password'), // jangan lupa hash!
         // ]);
 
-        $generateNip = fn() => fake()->numerify('##################'); // 18 digit
+        $generateNip = fn() => \fake()->numerify('##################'); // 18 digit
 
         User::create([
             'name' => 'Super Admin',
