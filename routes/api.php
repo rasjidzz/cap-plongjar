@@ -81,7 +81,6 @@ Route::prefix('v1')->group(function () {
 
             // MATAKULIAH, PROGRAM_STUDI, KELOMPOK_KEAHLIAN, MAPPING_KELAS_MATKUL
             Route::get('/getAllMatakuliah', [MatakuliahController::class, 'index']);
-            Route::get('/programstudi', [ProgramStudiController::class, 'index']);
             Route::get('/kelompokkeahlian', [KelompokKeahlianController::class, 'index']);
             Route::get('/getmappingkelasmatkulbyidmatkul/{id_matakuliah}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatkulbyIdMatkul']);
             Route::get('/mapping-kelas-matakuliah/matakuliah/{id_matakuliah}/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [MappingKelasMatakuliahController::class, 'getMappingKelasMatakuliahByIdMatakuliahIdTahunAjaranandIdProgramStudi']);
@@ -134,6 +133,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('auth:sanctum')->group(function () {
             // ... route lain
             Route::get('/tahun-ajaran/aktif', [TahunAjaranController::class, 'getActiveTahunAjaran'])->name('tahunAjaran.getActive');
+            Route::get('/get-all-tahun-ajaran', [TahunAjaranController::class, 'index']);
+            Route::get('/programstudi', [ProgramStudiController::class, 'index']);
         });
     });
     // 3. Master Data
