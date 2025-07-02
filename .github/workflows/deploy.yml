@@ -71,6 +71,7 @@
 #             echo "🚀 Deployment to development finished successfully!"
 
 # .github/workflows/deploy.yml (di repository backend lokal Anda)
+# .github/workflows/deploy.yml
 name: Deploy Backend to Development VPS
 
 on:
@@ -83,95 +84,49 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Backend Code
+      - name: Checkout Code
         uses: actions/checkout@v4
-        # Kode backend akan di-checkout ke runner GitHub Actions.
 
-      - name: Deploy Backend to VPS via SSH
+      - name: Deploy to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            # === DIAGNOSTIK AWAL ===
-            echo "--- Diagnostik Awal ---"
-            pwd
-            ls -la
-            echo "-----------------------"
-            # =======================
+            # Navigasi ke direktori project utama di VPS
+            cd ${{ secrets.PROJECT_PATH }}
 
-            # 1. Navigasi ke direktori utama di VPS tempat plongjarv1 berada
-            cd ${{ secrets.PROJECT_PATH }} # PROJECT_PATH = /path/to/plongjarv1
-
-            echo "✅ Now in $(pwd) directory: /path/to/plongjarv1"
-
-            # === DIAGNOSTIK DI PLONGJARV1 ===
-            echo "--- Diagnostik di /plongjarv1 ---"
-            pwd
-            ls -la backend/ # Pastikan folder backend ada
-            echo "---------------------------------"
-            # ==================================
-
-            # 2. Masuk ke folder 'backend' untuk mengupdate kode
+            # Masuk ke direktori backend untuk update dari Git
+            echo "▶️ Updating backend code from repository..."
             cd backend
-            echo "✅ Now in $(pwd) directory: /path/to/plongjarv1/backend"
-
-            # === DIAGNOSTIK DI BACKEND SEBELUM PULL ===
-            echo "--- Diagnostik di backend/ sebelum pull ---"
-            pwd
-            git status # Lihat status git
-            git branch # Lihat branch aktif
-            echo "------------------------------------------"
-            # ==========================================
-
-            # 3. Pull perubahan terbaru dari repository backend
             git config pull.rebase false
             git reset --hard origin/development
             git clean -df
             git pull origin development
-            echo "✅ Backend code updated from development branch."
-
-            # === DIAGNOSTIK DI BACKEND SETELAH PULL ===
-            echo "--- Diagnostik di backend/ setelah pull ---"
-            pwd
-            git status
-            git log -1 # Lihat commit terakhir
-            ls -la UserSeeder.php
-            cat Database/Seeders/UserSeeder.php | grep -i fake # Cek lagi setelah pull
-            echo "-------------------------------------------"
-            # ===========================================
-
-            # 4. Kembali ke direktori utama plongjarv1 untuk menjalankan docker compose
             cd ..
-            echo "✅ Back in $(pwd) directory: /path/to/plongjarv1"
+            echo "✅ Backend code updated."
 
-            # 5. Bangun ulang image backend 'app' menggunakan docker-compose.yml utama
-            echo "Building backend Docker image..."
+            # Bangun ulang image Docker untuk service 'app'
+            echo "▶️ Rebuilding backend Docker image..."
             docker compose build app
-            echo "✅ Backend Docker image rebuilt."
+            echo "✅ Docker image rebuilt."
 
-            # 6. Hentikan dan mulai ulang service 'app'
-            echo "Restarting backend application..."
+            # Restart kontainer aplikasi
+            echo "▶️ Restarting application container..."
             docker compose up -d app --force-recreate
-            echo "✅ Backend application restarted."
+            echo "✅ Application container restarted."
 
-            # === DIAGNOSTIK SETELAH RESTART KONTENER ===
-            echo "--- Diagnostik dalam kontainer setelah restart ---"
-            docker compose exec app sh -c "ls -la /var/www/html/vendor/" # Cek isi folder vendor di kontainer
-            docker compose exec app sh -c "cat /var/www/html/Database/Seeders/UserSeeder.php | grep -i fake" # Cek UserSeeder di kontainer
-            echo "-------------------------------------------------"
-            # ================================================
+            # Jalankan perintah database migration
+            echo "▶️ Running database migrations..."
+            docker compose exec app php artisan migrate --force --seed
+            echo "✅ Database migrations complete."
 
-            # 7. Jalankan perintah Artisan di dalam kontainer backend
-            echo "Running database migrations..."
-            docker compose exec app php artisan migrate --force
-            echo "✅ Database migrated."
-
-            echo "Clearing and rebuilding Laravel caches..."
+            # Optimasi cache Laravel
+            echo "▶️ Clearing and rebuilding application cache..."
             docker compose exec app php artisan config:cache
             docker compose exec app php artisan route:cache
             docker compose exec app php artisan view:cache
-            echo "✅ Application cache cleared and rebuilt."
+            echo "✅ Application cache rebuilt."
 
             echo "🚀 Deployment to development finished successfully!"
