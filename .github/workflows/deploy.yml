@@ -122,8 +122,6 @@ jobs:
             pwd
             git status # Lihat status git
             git branch # Lihat branch aktif
-            ls -la UserSeeder.php # Cek apakah UserSeeder.php ada
-            cat Database/Seeders/UserSeeder.php | grep -i fake # Cari kata 'fake' di UserSeeder.php
             echo "------------------------------------------"
             # ==========================================
 
