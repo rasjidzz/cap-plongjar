@@ -1,6 +1,5 @@
-# .github/workflows/deploy.yml - VERSI FINAL BERSIH
-
-name: Deploy to Development VPS
+# .github/workflows/deploy.yml (di repository backend lokal Anda)
+name: Deploy Backend to Development VPS
 
 on:
   push:
@@ -12,44 +11,61 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Backend Code
         uses: actions/checkout@v4
+        # Kode backend akan di-checkout ke runner GitHub Actions (misal di /home/runner/work/your-repo/your-repo)
 
-      - name: Deploy to VPS via SSH
+      - name: Deploy Backend to VPS via SSH
         uses: appleboy/ssh-action@v1.0.3
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            cd ${{ secrets.PROJECT_PATH }}
+            # 1. Navigasi ke direktori utama di VPS tempat plongjarv1 berada
+            cd ${{ secrets.PROJECT_PATH }} # PROJECT_PATH = /path/to/plongjarv1
 
+            echo "✅ Now in $(pwd) directory: /path/to/plongjarv1"
+
+            # 2. Masuk ke folder 'backend' untuk mengupdate kode
             cd backend
+            echo "✅ Now in $(pwd) directory: /path/to/plongjarv1/backend"
 
-            echo "✅ Now in $(pwd) directory"
-
-            # Discard local changes and force pull
-            git reset --hard origin/development
-            git clean -df
+            # 3. Pull perubahan terbaru dari repository backend
+            # Ini akan mengupdate kode dan Dockerfile di dalam folder backend
+            git config pull.rebase false # Penting untuk menghindari rebase di CI/CD
+            git reset --hard origin/development # Pastikan local repo bersih
+            git clean -df                   # Hapus untracked files/dirs
             git pull origin development
+            echo "✅ Backend code updated from development branch."
 
-            echo "✅ Code updated from development branch"
-
+            # 4. Kembali ke direktori utama plongjarv1 untuk menjalankan docker compose
             cd ..
+            echo "✅ Back in $(pwd) directory: /path/to/plongjarv1"
 
-            echo "✅ Back in $(pwd) directory, running Docker commands"
+            # -- File .env di dalam ./backend/.env TIDAK akan terhapus oleh git pull --
+            # -- asalkan sudah ada dan tidak diubah di repository (biasanya di .gitignore) --
 
-            docker compose exec app composer install
+            # 5. Bangun ulang image backend 'app' menggunakan docker-compose.yml utama
+            # Konteks build adalah './backend' seperti yang didefinisikan di docker-compose.yml utama
+            echo "Building backend Docker image..."
+            docker compose build app
+            echo "✅ Backend Docker image rebuilt."
 
-            echo "✅ Composer dependencies installed"
+            # 6. Hentikan dan mulai ulang service 'app'
+            echo "Restarting backend application..."
+            docker compose up -d app --force-recreate
+            echo "✅ Backend application restarted."
 
-            docker compose exec app php artisan migrate:fresh --seed --force
+            # 7. Jalankan perintah Artisan di dalam kontainer backend
+            echo "Running database migrations..."
+            docker compose exec app php artisan migrate --force
+            echo "✅ Database migrated."
 
-            echo "✅ Database migrated"
-
+            echo "Clearing and rebuilding Laravel caches..."
             docker compose exec app php artisan config:cache
             docker compose exec app php artisan route:cache
             docker compose exec app php artisan view:cache
+            echo "✅ Application cache cleared and rebuilt."
 
-            echo "✅ Application cache cleared and rebuilt"
             echo "🚀 Deployment to development finished successfully!"
