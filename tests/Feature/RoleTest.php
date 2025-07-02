@@ -10,6 +10,7 @@ use App\Models\Role;
 use App\Models\User_Role;
 use App\Models\ProgramStudi; // Diasumsikan ada model ini jika roleable_type adalah ProgramStudi
 use App\Models\KelompokKeahlian; // Diasumsikan ada model ini jika roleable_type adalah KelompokKeahlian
+use Illuminate\Support\Facades\Hash;
 
 class RoleTest extends TestCase
 {
@@ -301,4 +302,160 @@ class RoleTest extends TestCase
                      'message' => 'Role not found for this user'
                  ]);
     }
+
+     public function test_admin_can_view_all_assigned_user_roles(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser(); // Ini membuat 1 User_Role
+
+        // Buat beberapa user dan assign beberapa role
+        $user1 = User::factory()->create(['name' => 'User One']);
+        $user2 = User::factory()->create(['name' => 'User Two']);
+        $roleProgramStudi = Role::where('name', 'ProgramStudi')->first();
+        $roleKelompokKeahlian = Role::where('name', 'KelompokKeahlian')->first();
+
+        $prodi1 = ProgramStudi::factory()->create(['nama' => 'S1 Informatika']);
+        $kk1 = KelompokKeahlian::factory()->create(['nama' => 'SEAL']);
+
+        User_Role::create([
+            'user_id' => $user1->id,
+            'role_id' => $roleProgramStudi->id,
+            'roleable_id' => $prodi1->id,
+            'roleable_type' => ProgramStudi::class,
+        ]); // Ini User_Role ke-2
+
+        User_Role::create([
+            'user_id' => $user2->id,
+            'role_id' => $roleKelompokKeahlian->id,
+            'roleable_id' => $kk1->id,
+            'roleable_type' => KelompokKeahlian::class,
+        ]); // Ini User_Role ke-3
+
+        User_Role::create([
+            'user_id' => $user2->id,
+            'role_id' => Role::where('name', 'LayananAkademik')->first()->id, // Role tanpa roleable
+            'roleable_id' => null,
+            'roleable_type' => null,
+        ]); // Ini User_Role ke-4
+
+
+        // 2. Aksi: Login sebagai admin dan kirim GET request untuk melihat semua role
+        $response = $this->actingAs($admin, 'sanctum')->getJson('/api/v1/roles');
+
+        // 3. Assertions
+        $response->assertStatus(200) // Memastikan status HTTP 200
+                 ->assertJsonCount(5); // <-- UBAH DARI 3 MENJADI 4
+    }
+
+    public function test_admin_can_assign_scoped_role_successfully(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser();
+        $userToAssign = User::factory()->create();
+        $roleProgramStudi = Role::where('name', 'ProgramStudi')->first(); // ID 2
+        $programStudi = ProgramStudi::factory()->create(['nama' => 'S1 Rekayasa Perangkat Lunak']);
+
+        // 2. Aksi: Login sebagai admin dan kirim POST request untuk assign scoped role (Kaprodi)
+        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => $userToAssign->id,
+            'role_id' => $roleProgramStudi->id, // ID 2 for ProgramStudi
+            'roleable_id' => $programStudi->id,
+        ]);
+
+        // 3. Assertions
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'success' => true,
+                     'message' => 'Role berhasil di-assign ke user.',
+                 ]);
+
+        // Verifikasi database: memastikan role berhasil di-assign dengan roleable
+        $this->assertDatabaseHas('user_roles', [
+            'user_id' => $userToAssign->id,
+            'role_id' => $roleProgramStudi->id,
+            'roleable_id' => $programStudi->id,
+            'roleable_type' => ProgramStudi::class,
+        ]);
+
+        // Skenario kedua: Assign Ketua KK
+        $userToAssignKK = User::factory()->create();
+        $roleKelompokKeahlian = Role::where('name', 'KelompokKeahlian')->first(); // ID 3
+        $kelompokKeahlian = KelompokKeahlian::factory()->create(['nama' => 'CITI']);
+
+        $responseKK = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => $userToAssignKK->id,
+            'role_id' => $roleKelompokKeahlian->id, // ID 3 for KelompokKeahlian
+            'roleable_id' => $kelompokKeahlian->id,
+        ]);
+
+        $responseKK->assertStatus(200)
+                   ->assertJson([
+                       'success' => true,
+                       'message' => 'Role berhasil di-assign ke user.',
+                   ]);
+
+        $this->assertDatabaseHas('user_roles', [
+            'user_id' => $userToAssignKK->id,
+            'role_id' => $roleKelompokKeahlian->id,
+            'roleable_id' => $kelompokKeahlian->id,
+            'roleable_type' => KelompokKeahlian::class,
+        ]);
+    }
+
+    public function test_admin_cannot_assign_scoped_role_with_invalid_id(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser();
+        $roleProgramStudi = Role::where('name', 'ProgramStudi')->first();
+
+        // Skenario 1: user_id tidak valid
+        $response1 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => 9999, // User ID tidak ada
+            'role_id' => $roleProgramStudi->id,
+            'roleable_id' => 1, // Asumsi ada ProgramStudi dengan ID 1
+        ]);
+        $response1->assertStatus(422)
+                  ->assertJsonValidationErrors(['user_id']);
+
+        // Skenario 2: role_id tidak valid (bukan 2 atau 3)
+        $userToAssign = User::factory()->create();
+        $roleLayananAkademik = Role::where('name', 'LayananAkademik')->first(); // ID 4
+        $response2 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => $userToAssign->id,
+            'role_id' => $roleLayananAkademik->id, // ID 4, tidak diizinkan
+            'roleable_id' => 1,
+        ]);
+        $response2->assertStatus(422)
+                  ->assertJsonValidationErrors(['role_id']);
+
+        // Skenario 3: roleable_id tidak valid untuk role ProgramStudi
+        $programStudiNonExistent = 9999;
+        $response3 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => $userToAssign->id,
+            'role_id' => $roleProgramStudi->id,
+            'roleable_id' => $programStudiNonExistent, // ID ProgramStudi tidak ada
+        ]);
+        $response3->assertStatus(422) // Controller mengembalikan 422 jika roleable_exists false
+                  ->assertJson([
+                      'success' => false,
+                      'message' => 'Data entitas (Program Studi/Kelompok Keahlian) dengan ID yang diberikan tidak ditemukan.',
+                  ])
+                  ->assertJsonValidationErrors(['roleable_id']);
+
+        // Skenario 4: roleable_id tidak valid untuk role KelompokKeahlian
+        $roleKelompokKeahlian = Role::where('name', 'KelompokKeahlian')->first();
+        $kelompokKeahlianNonExistent = 8888;
+        $response4 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
+            'user_id' => $userToAssign->id,
+            'role_id' => $roleKelompokKeahlian->id,
+            'roleable_id' => $kelompokKeahlianNonExistent, // ID KelompokKeahlian tidak ada
+        ]);
+        $response4->assertStatus(422)
+                  ->assertJson([
+                      'success' => false,
+                      'message' => 'Data entitas (Program Studi/Kelompok Keahlian) dengan ID yang diberikan tidak ditemukan.',
+                  ])
+                  ->assertJsonValidationErrors(['roleable_id']);
+    }
+
 }

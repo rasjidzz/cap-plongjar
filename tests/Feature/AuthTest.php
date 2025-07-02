@@ -9,27 +9,42 @@ use App\Models\User;
 use App\Models\Role;
 use App\Models\User_Role;
 use Illuminate\Support\Facades\Hash;
+use Laravel\Sanctum\PersonalAccessToken;
 
 class AuthTest extends TestCase
 {
-    use RefreshDatabase; // Memastikan database bersih untuk setiap test
-    use WithFaker;     // Untuk membuat data dummy
+    use RefreshDatabase;
+    use WithFaker;
 
-    /**
-     * Setup the test environment.
-     * Membuat user dan role yang dibutuhkan sebelum setiap test dijalankan.
-     *
-     * @return void
-     */
     protected function setUp(): void
     {
         parent::setUp();
 
-        // Buat role 'Superadmin' jika belum ada.
-        // Role ID 1 diasumsikan adalah Superadmin berdasarkan api.php
+        // Pastikan roles dasar ada di database test
         Role::firstOrCreate(['id' => 1, 'name' => 'Superadmin']);
-        Role::firstOrCreate(['id' => 2, 'name' => 'ProgramStudi']); // Untuk skenario roleable
-        Role::firstOrCreate(['id' => 3, 'name' => 'KelompokKeahlian']); // Untuk skenario roleable
+        Role::firstOrCreate(['id' => 2, 'name' => 'ProgramStudi']);
+        Role::firstOrCreate(['id' => 3, 'name' => 'KelompokKeahlian']);
+    }
+
+    /**
+     * Helper method untuk membuat user admin yang bisa melakukan aksi.
+     *
+     * @return \App\Models\User
+     */
+    protected function createAdminUser()
+    {
+        $admin = User::factory()->create([
+            'email' => 'admin_test@example.com', // Gunakan email unik untuk admin test
+            'password' => Hash::make('password'), // Pastikan password default untuk factory adalah 'password'
+        ]);
+        $adminRole = Role::where('name', 'Superadmin')->first();
+        User_Role::create([
+            'user_id' => $admin->id,
+            'role_id' => $adminRole->id,
+            'roleable_type' => null,
+            'roleable_id' => null,
+        ]);
+        return $admin;
     }
 
     /**
@@ -45,68 +60,65 @@ class AuthTest extends TestCase
         // 1. Persiapan Data
         $password = 'password123';
         $user = User::factory()->create([
-            'email' => 'admin@example.com',
+            'email' => 'user_login@example.com', // Email unik untuk test ini
             'password' => Hash::make($password),
-            'name' => 'Admin Test',
+            'name' => 'Test User Login',
         ]);
 
         // Asumsikan user ini memiliki role Superadmin
-        $superadminRole = Role::where('name', 'Superadmin')->first(); //
-        User_Role::create([ //
-            'user_id' => $user->id, //
-            'role_id' => $superadminRole->id, //
-            'roleable_type' => null, //
-            'roleable_id' => null, //
+        $superadminRole = Role::where('name', 'Superadmin')->first();
+        User_Role::create([
+            'user_id' => $user->id,
+            'role_id' => $superadminRole->id,
+            'roleable_type' => null,
+            'roleable_id' => null,
         ]);
 
         // 2. Aksi: Mengirim POST request ke endpoint login
-        $response = $this->postJson('/api/v1/auth/login', [ //
-            'email' => $user->email, //
-            'password' => $password, //
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => $password,
         ]);
 
         // 3. Assertions: Memverifikasi respons dan database
-        $response->assertStatus(200); // Memastikan status HTTP 200 (Success)
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'status' => 'success',
+                     'message' => 'Login success',
+                     'user' => [
+                         'id' => $user->id,
+                         'name' => $user->name,
+                         'email' => $user->email,
+                     ],
+                     'roles' => [
+                         [
+                             'role_id' => $superadminRole->id,
+                             'role_name' => 'Superadmin',
+                             'roleable_type' => null,
+                             'roleable_id' => null,
+                             'roleable_name' => null,
+                         ]
+                     ]
+                 ]);
 
-        $response->assertJson([ // Memastikan isi JSON response sesuai
-            'status' => 'success', //
-            'message' => 'Login success', //
-            'user' => [ //
-                'id' => $user->id, //
-                'name' => $user->name, //
-                'email' => $user->email, //
+        $response->assertJsonStructure([
+            'status',
+            'message',
+            'token' => [
+                'accessToken',
+                'plainTextToken',
             ],
-            'roles' => [ //
-                [
-                    'role_id' => $superadminRole->id, //
-                    'role_name' => 'Superadmin', //
-                    'roleable_type' => null, //
-                    'roleable_id' => null, //
-                    'roleable_name' => null, //
-                ]
-            ]
+            'user' => [
+                'id',
+                'name',
+                'email',
+            ],
+            'roles'
         ]);
 
-        // Memastikan struktur token dan user ada
-        $response->assertJsonStructure([ //
-            'status', //
-            'message', //
-            'token' => [ //
-                'accessToken', //
-                'plainTextToken', //
-            ],
-            'user' => [ //
-                'id', //
-                'name', //
-                'email', //
-            ],
-            'roles' //
-        ]);
-
-        // Opsional: Memastikan token tersimpan di database
         $this->assertDatabaseHas('personal_access_tokens', [
-            'tokenable_id' => $user->id, //
-            'name' => $user->email, // Asumsi nama token adalah email user
+            'tokenable_id' => $user->id,
+            'name' => $user->email,
         ]);
     }
 
@@ -123,26 +135,25 @@ class AuthTest extends TestCase
         // 1. Persiapan Data
         $password = 'password123';
         $user = User::factory()->create([
-            'email' => 'admin@example.com',
+            'email' => 'wrongpass@example.com', // Email unik untuk test ini
             'password' => Hash::make($password),
         ]);
 
         // 2. Aksi: Mengirim POST request dengan password yang salah
-        $response = $this->postJson('/api/v1/auth/login', [ //
-            'email' => $user->email, //
-            'password' => 'wrong-password', // Password salah
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => $user->email,
+            'password' => 'wrong-password',
         ]);
 
         // 3. Assertions: Memverifikasi respons
-        $response->assertStatus(401); // Memastikan status HTTP 401 (Unauthorized)
-        $response->assertJson([ // Memastikan isi JSON response sesuai
-            'status' => 'Login Failed', //
-            'message' => 'The provided credentials are incorrect', //
-        ]);
+        $response->assertStatus(401)
+                 ->assertJson([
+                     'status' => 'Login Failed',
+                     'message' => 'The provided credentials are incorrect',
+                 ]);
 
-        // Opsional: Memastikan tidak ada token yang dibuat di database
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $user->id, //
+            'tokenable_id' => $user->id,
         ]);
     }
 
@@ -157,16 +168,68 @@ class AuthTest extends TestCase
     public function test_admin_login_failure_with_non_existent_email(): void
     {
         // 1. Aksi: Mengirim POST request dengan email yang tidak terdaftar
-        $response = $this->postJson('/api/v1/auth/login', [ //
-            'email' => 'nonexistent@example.com', // Email tidak terdaftar
+        $response = $this->postJson('/api/v1/auth/login', [
+            'email' => 'nonexistent@example.com',
             'password' => 'anypassword',
         ]);
 
         // 2. Assertions: Memverifikasi respons
-        $response->assertStatus(401); // Memastikan status HTTP 401 (Unauthorized)
-        $response->assertJson([ // Memastikan isi JSON response sesuai
-            'status' => 'Login Failed', //
-            'message' => 'The provided credentials are incorrect', //
+        $response->assertStatus(401)
+                 ->assertJson([
+                     'status' => 'Login Failed',
+                     'message' => 'The provided credentials are incorrect',
+                 ]);
+    }
+
+    /**
+     * TC-ADM-21: Logout Admin Berhasil.
+     * Memastikan Admin dapat logout dari sistem.
+     * HTTP Response status code = 200 (Success)
+     *
+     * @return void
+     */
+    public function test_admin_can_logout_successfully(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser(); // Membuat user admin dengan password 'password'
+
+        // Simulate login to get a token. This token will be used for logout.
+        $loginResponse = $this->postJson('/api/v1/auth/login', [
+            'email' => $admin->email,
+            'password' => 'password', // Gunakan password yang sama dengan yang dibuat di createAdminUser
+        ]);
+
+        // Pastikan login berhasil dan dapatkan plainTextToken
+        $loginResponse->assertStatus(200);
+        $token = $loginResponse->json('token.plainTextToken');
+
+        // Extract the token ID from the plainTextToken (e.g., "1|randomstring")
+        $tokenParts = explode('|', $token);
+        $tokenId = $tokenParts[0];
+
+        // Assert that the token is present in the database before logout
+        $this->assertDatabaseHas('personal_access_tokens', [
+            'id' => $tokenId,
+            'tokenable_id' => $admin->id,
+        ]);
+
+        // 2. Aksi: Kirim POST request ke endpoint logout, menggunakan token yang didapat dari login
+        // Penting: Jangan gunakan actingAs() lagi di sini jika Anda ingin memastikan token spesifik ini dihapus.
+        // Cukup kirim header Authorization.
+        $response = $this->withHeaders([
+            'Authorization' => 'Bearer ' . $token,
+        ])->postJson('/api/v1/auth/logout');
+
+        // 3. Assertions
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'message' => 'Logged out successfully',
+                 ]);
+
+        // Verifikasi database: memastikan token spesifik telah dihapus
+        $this->assertDatabaseMissing('personal_access_tokens', [
+            'id' => $tokenId,
+            'tokenable_id' => $admin->id,
         ]);
     }
 }
