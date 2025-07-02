@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+    app:
+        build:
+            context: .
+            dockerfile: Dockerfile
+        container_name: local-plongjarv1-backend # Nama berbeda untuk lokal
+        restart: unless-stopped
+        volumes:
+            - .:/var/www/html # Mounting kode lokal ke kontainer (penting untuk dev)
+            - /var/www/html/vendor # Hindari menimpa vendor dari host
+            - ./storage:/var/www/html/storage # Pastikan folder storage persisten
+        ports:
+            - "9000:9000" # Port PHP-FPM, bisa diakses Nginx atau untuk debugging Xdebug
+        depends_on:
+            - db # Pastikan service 'db' (MySQL) sudah berjalan sebelum 'app' dimulai
+        environment:
+            # Variabel lingkungan untuk Laravel. Ambil dari .env lokal Anda.
+            DB_CONNECTION: mysql
+            DB_HOST: db # Nama service database di docker-compose
+            DB_PORT: 3306
+            # DB_DATABASE: ${DB_DATABASE:-laravel_local_db} # Nama DB lokal default
+            DB_DATABASE: ${DB_DATABASE:-plongjarv1} # Nama DB lokal default
+            DB_USERNAME: ${DB_USERNAME:-root}
+            DB_PASSWORD: ${DB_PASSWORD:-your_local_db_password}
+            APP_KEY: ${APP_KEY}
+            APP_ENV: local # Penting: Atur ke 'local' untuk pengembangan
+            APP_DEBUG: ${APP_DEBUG:-true} # Aktifkan debug di lokal
+
+    # Service untuk Database MySQL
+    db:
+        image: mysql:8.0 # Bisa juga mysql:latest
+        container_name: local-mysql # Nama berbeda untuk lokal
+        restart: unless-stopped
+        ports:
+            - "3306:3306" # Agar bisa diakses dari alat seperti MySQL Workbench
+        environment:
+            MYSQL_DATABASE: ${DB_DATABASE:-plongjarv1}
+            MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-your_local_db_password}
+            # MYSQL_USER: ${DB_USERNAME:-root}
+            # MYSQL_PASSWORD: ${DB_PASSWORD:-your_local_db_password}
+        volumes:
+            - db_data_local:/var/lib/mysql # Penting! Untuk menyimpan data database secara persisten di lokal
+
+    # Service untuk Nginx (Web Server/Reverse Proxy)
+    nginx:
+        image: nginx:latest
+        container_name: local-nginx-proxy # Nama berbeda untuk lokal
+        restart: unless-stopped
+        ports:
+            - "80:80" # Akses aplikasi dari http://localhost
+        volumes:
+            - .:/var/www/html # Mount proyek Laravel (untuk Nginx mengakses public/)
+            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf # Konfigurasi Nginx kustom
+        depends_on:
+            - app # Nginx harus menunggu 'app' siap
+
+volumes:
+    db_data_local: # Volume persisten untuk data MySQL lokal
