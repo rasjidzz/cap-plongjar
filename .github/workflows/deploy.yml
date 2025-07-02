@@ -59,7 +59,7 @@ jobs:
 
             # 7. Jalankan perintah Artisan di dalam kontainer backend
             echo "Running database migrations..."
-            docker compose exec app php artisan migrate --force
+            docker compose exec app php artisan migrate:fresh --seed --force
             echo "✅ Database migrated."
 
             echo "Clearing and rebuilding Laravel caches..."
