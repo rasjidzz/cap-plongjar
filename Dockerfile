@@ -67,14 +67,19 @@ RUN docker-php-ext-enable opcache \
 # Set direktori kerja di dalam kontainer
 WORKDIR /var/www/html
 
-# Salin berkas composer.json dan composer.lock terlebih dahulu
+# 1. Salin composer.json dan composer.lock terlebih dahulu
+# Ini memanfaatkan cache Docker. Jika kedua file ini tidak berubah,
+# langkah 'composer install' tidak akan dijalankan ulang (hemat waktu).
 COPY composer.json composer.lock ./
 
-# Instal dependensi Composer
-RUN composer install --no-scripts --prefer-dist \
+# 2. Instal dependensi Composer
+# Ini adalah langkah yang membuat folder 'vendor'
+RUN composer install --no-dev --optimize-autoloader --no-scripts --prefer-dist \
     && echo "✅ Composer dependencies installed"
 
-# Salin seluruh isi proyek Laravel ke dalam kontainer
+# 3. Salin seluruh isi proyek Laravel
+# Ini akan menimpa composer.json/lock yang sudah disalin, tapi itu tidak masalah.
+# Yang penting, folder 'vendor' yang sudah dibuat di langkah sebelumnya akan tetap ada.
 COPY . .
 
 # Berikan izin ke direktori storage dan bootstrap/cache
