@@ -28,20 +28,20 @@ jobs:
             echo "✅ Now in $(pwd) directory: /path/to/plongjarv1"
 
             # 2. Masuk ke folder 'backend' untuk mengupdate kode
-            cd backend
-            echo "✅ Now in $(pwd) directory: /path/to/plongjarv1/backend"
+            # cd backend
+            # echo "✅ Now in $(pwd) directory: /path/to/plongjarv1/backend"
 
             # 3. Pull perubahan terbaru dari repository backend
             # Ini akan mengupdate kode dan Dockerfile di dalam folder backend
-            git config pull.rebase false # Penting untuk menghindari rebase di CI/CD
-            git reset --hard origin/development # Pastikan local repo bersih
-            git clean -df                   # Hapus untracked files/dirs
-            git pull origin development
-            echo "✅ Backend code updated from development branch."
+            # git config pull.rebase false # Penting untuk menghindari rebase di CI/CD
+            # git reset --hard origin/development # Pastikan local repo bersih
+            # git clean -df                   # Hapus untracked files/dirs
+            # git pull origin development
+            # echo "✅ Backend code updated from development branch."
 
             # 4. Kembali ke direktori utama plongjarv1 untuk menjalankan docker compose
-            cd ..
-            echo "✅ Back in $(pwd) directory: /path/to/plongjarv1"
+            # cd ..
+            # echo "✅ Back in $(pwd) directory: /path/to/plongjarv1"
 
             # -- File .env di dalam ./backend/.env TIDAK akan terhapus oleh git pull --
             # -- asalkan sudah ada dan tidak diubah di repository (biasanya di .gitignore) --
