@@ -97,77 +97,77 @@ class UserSeeder extends Seeder
 
         User::create([
             'name' => 'Anisa Admin KK Citi',
-            'email' => 'anisa_admin_kk_citi@example.com',
+            'email' => 'admin_citi@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340002',
         ]);
 
         User::create([
             'name' => 'Amelia Ketua KK Citi',
-            'email' => 'amelia_ketua_kk_citi@example.com',
+            'email' => 'ketua_citi@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340003',
         ]);
 
         User::create([
             'name' => 'Asep Admin Prodi S1 RPL',
-            'email' => 'asep_admin_prodi_rpl@example.com',
+            'email' => 'admin_rpl@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340004',
         ]);
 
         User::create([
             'name' => 'Bambang Ketua Prodi S1 RPL',
-            'email' => 'bambang_ketua_prodi_rpl@example.com',
+            'email' => 'ketua_rpl@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340005',
         ]);
 
         User::create([
             'name' => 'Ovi Rangkuti Kaur Lab Informatics',
-            'email' => 'ovi_kaur_labif@example.com',
+            'email' => 'kaur_lab@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340006',
         ]);
 
         User::create([
             'name' => 'Owala Asam Admin Prodi S1 Informatika',
-            'email' => 'owalainformatika@example.com',
+            'email' => 'admin_informatika@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340007',
         ]);
 
         User::create([
             'name' => 'Admin Prodi S1 Data Science',
-            'email' => 'adminds@example.com',
+            'email' => 'admin_ds@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340008',
         ]);
 
         User::create([
             'name' => 'Admin Prodi S1 Information Technology',
-            'email' => 'adminit@example.com',
+            'email' => 'admin_it@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340009',
         ]);
 
         User::create([
             'name' => 'Admin KK SEAL',
-            'email' => 'adminseal@example.com',
+            'email' => 'admin_seal@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340010',
         ]);
 
         User::create([
             'name' => 'Admin KK DSIS',
-            'email' => 'admindsis@example.com',
+            'email' => 'admin_dsis@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340011',
         ]);
 
         User::create([
             'name' => 'Admin LAK',
-            'email' => 'admindlak@example.com',
+            'email' => 'admin_lak@example.com',
             'password' => Hash::make('password'),
             'nip' => '1980010112340012',
         ]);
