@@ -152,9 +152,10 @@ Route::prefix('v1')->group(function () {
         });
         Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab,ProgramStudi,KelompokKeahlian'])->group(function () {
             Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
+            Route::get('/summary', [PlottinganPengajaranController::class, 'getPlottinganSummary']);
+            Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
+            Route::get('/export/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'exportHasilPlottinganByProdiDanTahunAjaranToExcel']);
         });
-        Route::get('/export/tahun-ajaran/{id_tahun_ajaran}', [PlottinganPengajaranController::class, 'exportHasilPlottinganToExcel']);
-        Route::get('/export/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'exportHasilPlottinganByProdiDanTahunAjaranToExcel']);
     });
 
     Route::middleware(['auth:sanctum'])->get('/user', function (Request $request) {
