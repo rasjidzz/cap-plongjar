@@ -17,7 +17,9 @@ class JabatanStrukturalFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            // Pastikan Anda mendefinisikan 'nama' dan 'konversi_sks' di sini
+            'nama' => $this->faker->unique()->jobTitle(), // Gunakan jobTitle() atau word()
+            'konversi_sks' => $this->faker->numberBetween(0, 16), // Sesuaikan rentang SKS yang wajar
         ];
     }
 }
