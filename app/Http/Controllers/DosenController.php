@@ -546,9 +546,10 @@ class DosenController extends Controller
                     })
                     ->sum('beban_sks');
 
-                if ($sksDiProdiIni > 0) {
-                    $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
-                }
+                $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
+                // if ($sksDiProdiIni > 0) {
+                //     $totalAjarPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
+                // }
             }
 
             return [
@@ -684,20 +685,34 @@ class DosenController extends Controller
 
             $rincianSksPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
         }
+        // $responseData = [
+        //     'id_dosen' => $dosen->id,
+        //     'nama_dosen' => $dosen->name,
+        //     'info_tahun_ajaran_aktif' => [
+        //         'id' => $tahunAjaranAktif->id,
+        //         'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+        //     ],
+        //     'perhitungan_sks' => [
+        //         'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
+        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
+        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
+        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
+        //         'rincian_sks_per_prodi' => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
+        //     ]
+        // ];
+        // Langkah 5: Siapkan data untuk respons dengan format yang diinginkan
         $responseData = [
-            'id_dosen' => $dosen->id,
-            'nama_dosen' => $dosen->name,
-            'info_tahun_ajaran_aktif' => [
-                'id' => $tahunAjaranAktif->id,
-                'deskripsi' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
-            ],
-            'perhitungan_sks' => [
-                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
-                'batas_maksimal_sks_mengajar' => $maxAjarSks,
-                'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-                'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-                'rincian_sks_per_prodi' => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
-            ]
+            'kode_dosen'                => $dosen->lecturer_code,
+            'nama_dosen'                => $dosen->name,
+            'kelompok_keahlian'         => $dosen->kelompokKeahlian?->name,
+            'jfa'                       => $dosen->jabatan_fungsional_akademik,
+            'jabatan_struktural'        => $dosen->jabatanStruktural?->nama,
+            'sks_ekuivalen_jabatan'     => $konversi_sks_jabatan,
+            'max_ajar_sks'              => $maxAjarSks,
+            'status_pegawai'            => $dosen->status_pegawai,
+            'total_ajar_per_prodi'      => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null,
+            'total_ajar_sks_keseluruhan' => $totalSksMengajar,
+            'sisa_sks_mengajar'         => $sisaSksMengajar,
         ];
 
         return response()->json([
@@ -752,22 +767,34 @@ class DosenController extends Controller
 
             $rincianSksPerProdi[$prodi->nama] = (int)$sksDiProdiIni;
         }
+        // $responseData = [
+        //     'id_dosen' => $dosen->id,
+        //     'nama_dosen' => $dosen->name,
+        //     'info_tahun_ajaran_aktif' => [
+        //         'id' => $tahunAjaran->id,
+        //         'deskripsi' => $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester,
+        //     ],
+        //     'perhitungan_sks' => [
+        //         'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
+        //         'batas_maksimal_sks_mengajar' => $maxAjarSks,
+        //         'total_sks_mengajar_saat_ini' => $totalSksMengajar,
+        //         'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
+        //         'rincian_sks_per_prodi' => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
+        //     ]
+        // ];
         $responseData = [
-            'id_dosen' => $dosen->id,
-            'nama_dosen' => $dosen->name,
-            'info_tahun_ajaran_aktif' => [
-                'id' => $tahunAjaran->id,
-                'deskripsi' => $tahunAjaran->tahun_ajaran . ' - ' . $tahunAjaran->semester,
-            ],
-            'perhitungan_sks' => [
-                'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
-                'batas_maksimal_sks_mengajar' => $maxAjarSks,
-                'total_sks_mengajar_saat_ini' => $totalSksMengajar,
-                'sisa_sks_mengajar_yang_tersedia' => $sisaSksMengajar,
-                'rincian_sks_per_prodi' => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null, // Menambahkan detail per prodi
-            ]
+            'kode_dosen'                => $dosen->lecturer_code,
+            'nama_dosen'                => $dosen->name,
+            'kelompok_keahlian'         => $dosen->kelompokKeahlian?->name,
+            'jfa'                       => $dosen->jabatan_fungsional_akademik,
+            'jabatan_struktural'        => $dosen->jabatanStruktural?->nama,
+            'sks_ekuivalen_jabatan'     => $konversi_sks_jabatan,
+            'max_ajar_sks'              => $maxAjarSks,
+            'status_pegawai'            => $dosen->status_pegawai,
+            'total_ajar_per_prodi'      => !empty($rincianSksPerProdi) ? $rincianSksPerProdi : null,
+            'total_ajar_sks_keseluruhan' => $totalSksMengajar,
+            'sisa_sks_mengajar'         => $sisaSksMengajar,
         ];
-
         return response()->json([
             'success' => true,
             'message' => 'Rincian beban SKS dosen berhasil dimuat.',

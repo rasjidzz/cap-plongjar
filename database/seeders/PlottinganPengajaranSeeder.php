@@ -107,7 +107,7 @@ class PlottinganPengajaranSeeder extends Seeder
                     ]
                 );
             }
-            $this->command->info("Mapping ID {$mapping->id} ({$mapping->matakuliah->nama_matakuliah} - {$mapping->nama_kelas}) diplot ke " . count($dosenTerpilihIds) . " dosen.");
+            // $this->command->info("Mapping ID {$mapping->id} ({$mapping->matakuliah->nama_matakuliah} - {$mapping->nama_kelas}) diplot ke " . count($dosenTerpilihIds) . " dosen.");
         }
 
         $this->command->info('PlottinganPengajaranSeeder berhasil dijalankan.');
