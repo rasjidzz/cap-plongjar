@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [env('FRONTEND_URL',  'http://localhost:4200',)],
+    'allowed_origins' => [
+        env('FRONTEND_URL',  'http://localhost:4200',),
+        'http://siplongjar.com',
+        'http://www.siplongjar.com'
+    ],
 
     'allowed_origins_patterns' => [],
 

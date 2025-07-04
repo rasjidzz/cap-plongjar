@@ -1,6 +1,78 @@
-# .github/workflows/deploy.yml - VERSI FINAL BERSIH
+# # .github/workflows/deploy.yml (di repository backend lokal Anda)
+# name: Deploy Backend to Development VPS
 
-name: Deploy to Development VPS
+# on:
+#   push:
+#     branches:
+#       - development
+
+# jobs:
+#   deploy:
+#     runs-on: ubuntu-latest
+
+#     steps:
+#       - name: Checkout Backend Code
+#         uses: actions/checkout@v4
+#         # Kode backend akan di-checkout ke runner GitHub Actions (misal di /home/runner/work/your-repo/your-repo)
+
+#       - name: Deploy Backend to VPS via SSH
+#         uses: appleboy/ssh-action@v1.0.3
+#         with:
+#           host: ${{ secrets.VPS_HOST }}
+#           username: ${{ secrets.VPS_USERNAME }}
+#           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
+#           script: |
+#             # 1. Navigasi ke direktori utama di VPS tempat plongjarv1 berada
+#             cd ${{ secrets.PROJECT_PATH }} # PROJECT_PATH = /path/to/plongjarv1
+
+#             echo "✅ Now in $(pwd) directory: /path/to/plongjarv1"
+
+#             # 2. Masuk ke folder 'backend' untuk mengupdate kode
+#             # cd backend
+#             # echo "✅ Now in $(pwd) directory: /path/to/plongjarv1/backend"
+
+#             # 3. Pull perubahan terbaru dari repository backend
+#             # Ini akan mengupdate kode dan Dockerfile di dalam folder backend
+#             # git config pull.rebase false # Penting untuk menghindari rebase di CI/CD
+#             # git reset --hard origin/development # Pastikan local repo bersih
+#             # git clean -df                   # Hapus untracked files/dirs
+#             # git pull origin development
+#             # echo "✅ Backend code updated from development branch."
+
+#             # 4. Kembali ke direktori utama plongjarv1 untuk menjalankan docker compose
+#             # cd ..
+#             # echo "✅ Back in $(pwd) directory: /path/to/plongjarv1"
+
+#             # -- File .env di dalam ./backend/.env TIDAK akan terhapus oleh git pull --
+#             # -- asalkan sudah ada dan tidak diubah di repository (biasanya di .gitignore) --
+
+#             # 5. Bangun ulang image backend 'app' menggunakan docker-compose.yml utama
+#             # Konteks build adalah './backend' seperti yang didefinisikan di docker-compose.yml utama
+#             echo "Building backend Docker image..."
+#             docker compose build app
+#             echo "✅ Backend Docker image rebuilt."
+
+#             # 6. Hentikan dan mulai ulang service 'app'
+#             echo "Restarting backend application..."
+#             docker compose up -d app --force-recreate
+#             echo "✅ Backend application restarted."
+
+#             # 7. Jalankan perintah Artisan di dalam kontainer backend
+#             echo "Running database migrations..."
+#             docker compose exec app php artisan migrate:fresh --seed --force
+#             echo "✅ Database migrated."
+
+#             echo "Clearing and rebuilding Laravel caches..."
+#             docker compose exec app php artisan config:cache
+#             docker compose exec app php artisan route:cache
+#             docker compose exec app php artisan view:cache
+#             echo "✅ Application cache cleared and rebuilt."
+
+#             echo "🚀 Deployment to development finished successfully!"
+
+# .github/workflows/deploy.yml (di repository backend lokal Anda)
+# .github/workflows/deploy.yml
+name: Deploy Backend to Development VPS
 
 on:
   push:
@@ -12,7 +84,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
+      - name: Checkout Code
         uses: actions/checkout@v4
 
       - name: Deploy to VPS via SSH
@@ -22,32 +94,39 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
+            # Navigasi ke direktori project utama di VPS
             cd ${{ secrets.PROJECT_PATH }}
 
+            # Masuk ke direktori backend untuk update dari Git
+            echo "▶️ Updating backend code from repository..."
             cd backend
-
-            echo "✅ Now in $(pwd) directory"
-
-            git checkout development
+            git config pull.rebase false
+            git reset --hard origin/development
+            git clean -df
             git pull origin development
-
-            echo "✅ Code updated from development branch"
-
             cd ..
+            echo "✅ Backend code updated."
 
-            echo "✅ Back in $(pwd) directory, running Docker commands"
+            # Bangun ulang image Docker untuk service 'app'
+            echo "▶️ Rebuilding backend Docker image..."
+            docker compose build app
+            echo "✅ Docker image rebuilt."
 
-            docker compose exec app composer install
+            # Restart kontainer aplikasi
+            echo "▶️ Restarting application container..."
+            docker compose up -d app --force-recreate
+            echo "✅ Application container restarted."
 
-            echo "✅ Composer dependencies installed"
+            # Jalankan perintah database migration
+            echo "▶️ Running database migrations..."
+            docker compose exec app php artisan migrate:fresh --force --seed
+            echo "✅ Database migrations complete."
 
-            docker compose exec app php artisan migrate:fresh --seed --force
-
-            echo "✅ Database migrated"
-
+            # Optimasi cache Laravel
+            echo "▶️ Clearing and rebuilding application cache..."
             docker compose exec app php artisan config:cache
             docker compose exec app php artisan route:cache
             docker compose exec app php artisan view:cache
+            echo "✅ Application cache rebuilt."
 
-            echo "✅ Application cache cleared and rebuilt"
             echo "🚀 Deployment to development finished successfully!"

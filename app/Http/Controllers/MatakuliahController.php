@@ -115,6 +115,78 @@ class MatakuliahController extends Controller
             ], 500);
         }
     }
+    public function getMatakuliahByPicKelompokKeahlian(Request $request)
+    {
+        try {
+            // 1. Dapatkan user yang sedang login
+            $user = $request->user();
+            $user->loadMissing('roles');
+            $assignedEntityName = null;
+
+            // 2. Cari assignment Program Studi atau Kelompok Keahlian user tersebut
+            foreach ($user->roles as $role) {
+                if ($role->name === 'KelompokKeahlian' && isset($role->pivot->roleable_id)) {
+                    $kelompokKeahlian = KelompokKeahlian::find($role->pivot->roleable_id);
+                    if ($kelompokKeahlian) {
+                        $assignedEntityName = $kelompokKeahlian->nama;
+                        break;
+                    }
+                }
+            }
+
+            // 3. Handle jika user tidak memiliki assignment yang sesuai
+            if (!$assignedEntityName) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak ter-assign ke Program Studi atau Kelompok Keahlian manapun.',
+                ], 403);
+            }
+
+            // 4. Cari PIC yang namanya sama dengan nama Program Studi/KK user
+            $pic = Pic::where('name', $assignedEntityName)->first();
+
+            if (!$pic) {
+                return response()->json([
+                    'success' => true, // Sukses, tapi tidak ada data
+                    'message' => 'Tidak ada mata kuliah yang ditemukan untuk PIC "' . $assignedEntityName . '".',
+                    'data' => []
+                ], 200);
+            }
+
+            // return response()->json([
+            //     'success' => true,
+            //     'message' => 'Success, Test Debug',
+            //     'dataUser' => $user,
+            //     'kelompokKeahlianData' => $kelompokKeahlian,
+            //     'picData' => $pic
+            // ], 200);
+
+            // 5. Bangun query untuk mengambil mata kuliah berdasarkan id_pic
+            $query = Matakuliah::query()->where('id_pic', $pic->id);
+
+            // Tambahkan fungsionalitas pencarian dan paginasi
+            $searchNamaMatakuliah = $request->query('nama_matakuliah', '');
+            $searchKodeMatkul = $request->query('kode_matkul', '');
+            $perPage = $request->query('per_page', 15);
+
+            $query->when($searchNamaMatakuliah, fn($q) => $q->where('nama_matakuliah', 'like', "%{$searchNamaMatakuliah}%"));
+            $query->when($searchKodeMatkul, fn($q) => $q->where('kode_matkul', 'like', "%{$searchKodeMatkul}%"));
+
+            $matakuliahs = $query->orderBy('nama_matakuliah', 'asc')->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar Mata Kuliah untuk PIC "' . $assignedEntityName . '" berhasil dimuat.',
+                'data' => $matakuliahs
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+
     public function getMatakuliahForPlottingByProdiAndKK(Request $request)
     {
         try {
