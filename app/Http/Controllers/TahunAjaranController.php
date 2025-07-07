@@ -143,10 +143,10 @@ class TahunAjaranController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(TahunAjaran $tahunAjaran)
+    public function destroy(TahunAjaran $tahunajaran)
     {
         // Validasi: Jangan biarkan user menghapus tahun ajaran yang sedang aktif.
-        if ($tahunAjaran->status === true) {
+        if ($tahunajaran->status === true) {
             return response()->json([
                 'success' => false,
                 'message' => 'Tidak dapat menghapus tahun ajaran yang sedang aktif. Silakan aktifkan tahun ajaran lain terlebih dahulu.'
@@ -154,7 +154,7 @@ class TahunAjaranController extends Controller
         }
 
         try {
-            $tahunAjaran->delete();
+            $tahunajaran->delete();
 
             return response()->json([
                 'success' => true,
