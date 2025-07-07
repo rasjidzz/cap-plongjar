@@ -17,6 +17,7 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PlottinganPengajaranExport;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\Paginator;
 
 class PlottinganPengajaranController extends Controller
 {
@@ -717,30 +718,82 @@ class PlottinganPengajaranController extends Controller
             ], 500);
         }
     }
+    // public function getPlottinganSummary(Request $request)
+    // {
+    //     $request->validate([
+    //         'id_program_studi' => 'nullable|integer|exists:program_studis,id',
+    //         'id_tahun_ajaran' => 'nullable|integer|exists:tahun_ajarans,id',
+    //     ]);
+
+    //     $id_program_studi_filter = $request->query('id_program_studi');
+    //     $id_tahun_ajaran_filter = $request->query('id_tahun_ajaran');
+    //     $perPage = $request->query('per_page', 15);
+
+    //     $query = DB::table('mapping_kelas_matakuliahs as mkm')
+    //         ->join('plottingan_pengajarans as pp', 'mkm.id', '=', 'pp.id_mapping_kelas_matakuliah')
+    //         ->join('program_studis as ps', 'mkm.id_program_studi', '=', 'ps.id')
+    //         ->join('tahun_ajarans as ta', 'mkm.id_tahun_ajaran', '=', 'ta.id')
+    //         ->select(
+    //             'ps.id as id_program_studi',
+    //             'ps.nama as nama_program_studi',
+    //             'ta.id as id_tahun_ajaran',
+    //             'ta.tahun_ajaran',
+    //             'ta.semester'
+    //         )
+    //         ->distinct();
+
+    //     $query->when($id_program_studi_filter, function ($q) use ($id_program_studi_filter) {
+    //         $q->where('ps.id', $id_program_studi_filter);
+    //     });
+
+    //     $query->when($id_tahun_ajaran_filter, function ($q) use ($id_tahun_ajaran_filter) {
+    //         $q->where('ta.id', $id_tahun_ajaran_filter);
+    //     });
+
+    //     $summaries = $query->orderBy('ps.nama', 'asc')
+    //         ->orderBy('ta.tahun_ajaran', 'desc')
+    //         ->orderBy('ta.semester', 'desc')
+    //         ->paginate($perPage);
+
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Ringkasan plottingan berhasil dimuat.',
+    //         'data' => $summaries
+    //     ]);
+    // }
     public function getPlottinganSummary(Request $request)
     {
+        // 1. Validasi parameter query jika ada
         $request->validate([
             'id_program_studi' => 'nullable|integer|exists:program_studis,id',
             'id_tahun_ajaran' => 'nullable|integer|exists:tahun_ajarans,id',
         ]);
 
+        // Ambil parameter
         $id_program_studi_filter = $request->query('id_program_studi');
         $id_tahun_ajaran_filter = $request->query('id_tahun_ajaran');
         $perPage = $request->query('per_page', 15);
 
+        // 2. Query utama menggunakan Query Builder untuk mendapatkan daftar ringkasan
         $query = DB::table('mapping_kelas_matakuliahs as mkm')
-            ->join('plottingan_pengajarans as pp', 'mkm.id', '=', 'pp.id_mapping_kelas_matakuliah')
             ->join('program_studis as ps', 'mkm.id_program_studi', '=', 'ps.id')
             ->join('tahun_ajarans as ta', 'mkm.id_tahun_ajaran', '=', 'ta.id')
+            // Hanya ambil mapping yang memiliki setidaknya satu plottingan
+            ->whereExists(function ($subQuery) {
+                $subQuery->select(DB::raw(1))
+                    ->from('plottingan_pengajarans as pp')
+                    ->whereColumn('pp.id_mapping_kelas_matakuliah', 'mkm.id');
+            })
             ->select(
                 'ps.id as id_program_studi',
-                'ps.nama as nama_program_studi',
+                'ps.nama as nama_program_studi', // Menggunakan 'name' sesuai model Anda
                 'ta.id as id_tahun_ajaran',
                 'ta.tahun_ajaran',
                 'ta.semester'
             )
-            ->distinct();
+            ->distinct(); // Mengambil kombinasi unik
 
+        // Terapkan filter jika parameter diberikan
         $query->when($id_program_studi_filter, function ($q) use ($id_program_studi_filter) {
             $q->where('ps.id', $id_program_studi_filter);
         });
@@ -749,14 +802,40 @@ class PlottinganPengajaranController extends Controller
             $q->where('ta.id', $id_tahun_ajaran_filter);
         });
 
-        $summaries = $query->orderBy('ps.nama', 'asc')
+        // Urutkan hasil
+        $query->orderBy('ps.nama', 'asc')
             ->orderBy('ta.tahun_ajaran', 'desc')
-            ->orderBy('ta.semester', 'desc')
-            ->paginate($perPage);
+            ->orderBy('ta.semester', 'desc');
+
+        // --- Paginasi Manual untuk memastikan total yang akurat ---
+        // 1. Dapatkan semua hasil yang cocok dari query
+        $allItems = $query->get();
+
+        // 2. Dapatkan halaman saat ini dari request
+        $currentPage = Paginator::resolveCurrentPage('page');
+
+        // 3. Buat irisan (slice) dari koleksi untuk halaman saat ini
+        $currentPageItems = $allItems->slice(($currentPage - 1) * $perPage, $perPage)->values();
+
+        // 4. Buat instance Paginator secara manual
+        $summaries = new LengthAwarePaginator(
+            $currentPageItems,
+            $allItems->count(), // Total item adalah jumlah dari semua item unik yang diambil
+            $perPage,
+            $currentPage,
+            // Opsi untuk memastikan link paginasi tetap benar
+            ['path' => Paginator::resolveCurrentPath(), 'query' => $request->query()]
+        );
+        // --- Akhir Paginasi Manual ---
+
+        // Cek apakah hasil paginasi kosong dan sesuaikan pesan
+        $message = $summaries->isEmpty()
+            ? 'Tidak ada data plottingan yang ditemukan untuk kriteria yang diberikan.'
+            : 'Ringkasan plottingan berhasil dimuat.';
 
         return response()->json([
             'success' => true,
-            'message' => 'Ringkasan plottingan berhasil dimuat.',
+            'message' => $message,
             'data' => $summaries
         ]);
     }
