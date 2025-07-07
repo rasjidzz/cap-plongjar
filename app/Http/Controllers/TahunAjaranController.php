@@ -39,14 +39,17 @@ class TahunAjaranController extends Controller
             'tahun_ajaran' => [
                 'required',
                 'string',
-                'max:255',
+                'regex:/^\d{4}\/\d{4}$/',
                 Rule::unique('tahun_ajarans')->where(function ($query) use ($request) {
                     return $query->where('semester', $request->semester);
                 }),
             ],
             'semester' => ['required', Rule::in(['ganjil', 'genap'])],
+        ], [
+            'tahun_ajaran.regex' => 'Format tahun ajaran tidak valid. Gunakan format "YYYY/YYYY", contoh: "2024/2025".',
+            'tahun_ajaran.unique' => 'Kombinasi tahun ajaran dan semester ini sudah ada.',
+            'semester.in' => 'Semester harus "ganjil" atau "genap".'
         ]);
-
 
         $tahunAjaran = TahunAjaran::create([
             'tahun_ajaran' => $validated['tahun_ajaran'],
