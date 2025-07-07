@@ -19,8 +19,6 @@ jobs:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
-          env:
-            APP_KEY: ${{ secrets.APP_KEY_VPS }}
           script: |
             # Navigasi ke direktori project utama di VPS
             cd ${{ secrets.PROJECT_PATH }} # PROJECT_PATH = /path/to/plongjarv1
@@ -97,4 +95,6 @@ jobs:
             # HAPUS BARIS INI: `docker compose exec app php artisan key:generate` karena sudah di atas
             echo "✅ Application cache rebuilt."
 
-            echo "🚀 Deployment to development finished successfully!"
+            echo "🚀 Deployment to development finished successfully!"|
+          env:
+            APP_KEY: ${{ secrets.APP_KEY_VPS }}
