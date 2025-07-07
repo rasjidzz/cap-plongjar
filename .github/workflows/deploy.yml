@@ -165,14 +165,10 @@ jobs:
             git pull origin development
             echo "✅ Backend code updated."
 
-            # --- TAMBAHKAN LANGKAH-LANGKAH INI UNTUK IZIN DAN APP_KEY ---
-
+            # --- Bagian Kunci untuk Izin dan APP_KEY ---
             echo "▶️ Setting permissions for storage and .env..."
-            # Pastikan owner adalah user VPS dan grupnya www-data
-            # Ini penting untuk izin file dan folder yang di-mount
             sudo chown -R $USER:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
-            # Pastikan .env dapat ditulis oleh www-data
             sudo chown $USER:www-data .env
             sudo chmod 664 .env
             echo "✅ Permissions set."
@@ -180,14 +176,23 @@ jobs:
             # Kembali ke direktori project utama untuk docker compose commands
             cd ..
 
-            # Bersihkan Laravel cache sebelum operasi kunci atau migrasi
-            echo "▶️ Clearing Laravel config and cache..."
-            docker compose exec app php artisan config:clear || true # Tambahkan || true agar tidak fail jika kontainer baru
-            docker compose exec app php artisan cache:clear || true # Tambahkan || true agar tidak fail jika kontainer baru
-            echo "✅ Laravel cache cleared."
+            # --- TAMBAHAN PENTING UNTUK MENGATASI CACHE DATABASE ---
+            # Hentikan kontainer 'app' untuk memastikan pembersihan cache yang menyeluruh sebelum start
+            echo "▶️ Stopping backend container for config refresh..."
+            docker compose stop app || true # Stop tanpa error jika sudah berhenti
+            echo "✅ Backend container stopped."
 
-            # Generate APP_KEY jika belum ada atau kosong
-            # Periksa apakah APP_KEY ada dan tidak kosong. Jika tidak, generate.
+            # Bersihkan Laravel cache (di host, sebelum container start)
+            # Ini akan menghapus file cache di bootstrap/cache/ yang mungkin rusak atau lama
+            sudo rm -rf backend/bootstrap/cache/*
+            echo "✅ Laravel cache files removed from host."
+
+            # --- Generate APP_KEY (jika belum ada/kosong) ---
+            # Kita perlu start app dulu untuk menjalankan artisan, tapi tanpa cache
+            echo "▶️ Starting backend container briefly for APP_KEY check/generation..."
+            docker compose up -d app # Pastikan kontainer 'app' berjalan untuk perintah Artisan
+            echo "✅ Backend container started briefly."
+
             APP_KEY_STATUS=$(docker compose exec app php -r "echo env('APP_KEY');" || true)
             if [ -z "$APP_KEY_STATUS" ] || [ "$APP_KEY_STATUS" = "null" ]; then
                 echo "▶️ APP_KEY is missing or empty. Generating new key..."
@@ -197,7 +202,15 @@ jobs:
                 echo "✅ APP_KEY already set."
             fi
 
-            # --- AKHIR TAMBAHAN LANGKAH-LANGKAH ---
+            # Setelah APP_KEY dipastikan, BERSIHKAN CACHE LAGI untuk memastikan APP_KEY baru ter-cache
+            echo "▶️ Clearing and rebuilding Laravel cache after APP_KEY check..."
+            docker compose exec app php artisan config:clear
+            docker compose exec app php artisan cache:clear
+            docker compose exec app php artisan config:cache # Recache dengan APP_KEY yang benar
+            docker compose exec app php artisan route:cache
+            docker compose exec app php artisan view:cache
+            echo "✅ Laravel cache rebuilt."
+            # --- AKHIR TAMBAHAN PENTING ---
 
             # Bangun ulang image Docker untuk service 'app'
             echo "▶️ Rebuilding backend Docker image..."
@@ -211,15 +224,7 @@ jobs:
 
             # Jalankan perintah database migration
             echo "▶️ Running database migrations..."
-            docker compose exec app php artisan migrate:fresh --seed
+            docker compose exec app php artisan migrate:fresh --seed --force # Tambahkan --force di sini
             echo "✅ Database migrations complete."
-
-            # Optimasi cache Laravel
-            echo "▶️ Clearing and rebuilding application cache..."
-            docker compose exec app php artisan config:cache
-            docker compose exec app php artisan route:cache
-            docker compose exec app php artisan view:cache
-            docker compose exec app php artisan key:generate
-            echo "✅ Application cache rebuilt."
 
             echo "🚀 Deployment to development finished successfully!"
