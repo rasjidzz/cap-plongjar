@@ -211,7 +211,7 @@ jobs:
 
             # Jalankan perintah database migration
             echo "▶️ Running database migrations..."
-            docker compose exec app php artisan migrate:fresh --seed --force
+            docker compose exec app php artisan migrate:fresh --seed
             echo "✅ Database migrations complete."
 
             # Optimasi cache Laravel
