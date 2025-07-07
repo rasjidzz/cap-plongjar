@@ -193,14 +193,9 @@ jobs:
             docker compose up -d app # Pastikan kontainer 'app' berjalan untuk perintah Artisan
             echo "✅ Backend container started briefly."
 
-            APP_KEY_STATUS=$(docker compose exec app php -r "echo env('APP_KEY');" || true)
-            if [ -z "$APP_KEY_STATUS" ] || [ "$APP_KEY_STATUS" = "null" ]; then
-                echo "▶️ APP_KEY is missing or empty. Generating new key..."
-                docker compose exec app php artisan key:generate
-                echo "✅ APP_KEY generated."
-            else
-                echo "✅ APP_KEY already set."
-            fi
+
+            docker compose exec app php artisan key:generate
+            echo "✅ APP_KEY generated."
 
             # Setelah APP_KEY dipastikan, BERSIHKAN CACHE LAGI untuk memastikan APP_KEY baru ter-cache
             echo "▶️ Clearing and rebuilding Laravel cache after APP_KEY check..."
