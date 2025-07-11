@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\Admin;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -232,4 +232,6 @@ class AuthTest extends TestCase
             'tokenable_id' => $admin->id,
         ]);
     }
+
+
 }

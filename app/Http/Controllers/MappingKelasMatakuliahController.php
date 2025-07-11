@@ -287,11 +287,7 @@ class MappingKelasMatakuliahController extends Controller
         $id_prodi_to_use = $userProdiId ?? $validatedData['id_program_studi'];
 
         $createdMappings = [];
-        // return response()->json([
-        //     'success' => true,
-        //     'data' => $createdMappings,
-        //     'dataUser' => $user
-        // ], 201);
+        
         DB::beginTransaction();
         try {
             foreach ($validatedData['classes'] as $classData) {

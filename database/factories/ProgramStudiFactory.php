@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Models\ProgramStudi;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -17,7 +18,7 @@ class ProgramStudiFactory extends Factory
     public function definition(): array
     {
         return [
-            //
+            'nama' => $this->faker->unique()->word() . ' ' . $this->faker->randomElement(['Informatika', 'Sistem Informasi', 'Rekayasa Perangkat Lunak', 'Data Sains']), // <-- TAMBAHKAN INI
         ];
     }
 }

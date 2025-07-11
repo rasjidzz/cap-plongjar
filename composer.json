@@ -14,7 +14,7 @@
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.10.1",
         "maatwebsite/excel": "^3.1",
-        "fakerphp/faker": "^1.23"
+        "fakerphp/faker": "^1.23",
         "phpunit/php-code-coverage": "^11.0"
     },
     "require-dev": {

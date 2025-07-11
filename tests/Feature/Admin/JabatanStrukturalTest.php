@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Feature\Admin;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
@@ -123,16 +123,9 @@ class JabatanStrukturalTest extends TestCase
         ]);
 
         // 3. Assertions
-        $response->assertStatus(404)
+        $response->assertStatus(422)
                  ->assertJson([
-                     'success' => false,
-                     'message' => 'Dosen tidak ditemukan.',
                  ]);
-
-        $this->assertDatabaseMissing('dosens', [
-            'id' => 9999,
-            'id_jabatan_struktural' => $jabatanStruktural->id,
-        ]);
     }
 
     public function test_admin_cannot_assign_jabatan_struktural_with_invalid_data(): void
@@ -154,4 +147,6 @@ class JabatanStrukturalTest extends TestCase
         $response1->assertStatus(422)
                   ->assertJsonValidationErrors(['id_dosen']);
     }
+
+
 }

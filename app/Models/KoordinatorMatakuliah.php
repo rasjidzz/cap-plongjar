@@ -2,10 +2,13 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class KoordinatorMatakuliah extends Model
 {
+    use HasFactory;
+
     protected $fillable = [
         'id_dosen',
         'id_mapping_kelas_matakuliah',

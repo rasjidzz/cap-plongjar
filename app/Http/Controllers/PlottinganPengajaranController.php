@@ -164,12 +164,6 @@ class PlottinganPengajaranController extends Controller
             $picOfMatakuliah = $matakuliah->pic;
             $picName = $picOfMatakuliah->name;
 
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Debug Role',
-            //     'role' => $user->roles
-            // ], 201);
-
             $isAuthorized = false;
             $userHasRelevantRole = false;
 
@@ -201,23 +195,7 @@ class PlottinganPengajaranController extends Controller
                 }
             }
 
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Anda memiliki role yang sesuai untuk melakukan aksi ini.',
-            //     'role' => [
-            //         $isAuthorized,
-            //         $userHasRelevantRole
-            //     ]
-            // ], 201);
-
             if ($userHasRelevantRole && !$isAuthorized) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
-                ], 403);
-            }
-
-            if (!$isAuthorized && $userHasRelevantRole) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
@@ -243,17 +221,6 @@ class PlottinganPengajaranController extends Controller
                     'message' => 'Anda tidak memiliki role yang sesuai untuk melakukan aksi ini.',
                 ], 403);
             }
-
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Anda memiliki role yang sesuai untuk melakukan aksi ini.',
-            //     'role' => [
-            //         $isSuperAdmin,
-            //         $isAuthorized,
-            //         $userHasRelevantRole
-            //     ]
-            // ], 201);
-            // Proses Validasi Otorisasi Role
 
             $sks_matakuliah = $matakuliah->sks;
 
@@ -321,37 +288,13 @@ class PlottinganPengajaranController extends Controller
             $konversi_sks_jabatan = 0;
             if ($dosenPengajar->id_jabatan_struktural !== null) {
                 $konversi_sks_jabatan = (int)$dosenPengajar->jabatanStruktural->konversi_sks;
-                // DEBUG
-                // return response()->json([
-                //     'success' => true,
-                //     'message' => 'Jabatan Struktural.',
-                //     'sks_jabatan' => $konversi_sks_jabatan
-                // ], 201);
-                // DEBUG
             }
 
             $id_tahun_ajaran = (int)$mapping_matkul->id_tahun_ajaran;
             $maksimalSksDosen = 16;
             $totalSksMengajarDosen = $dosenPengajar->getTotalSksMengajarPadaTahunAjaran($id_tahun_ajaran);
 
-            // DEBUG
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Total SKS',
-            //     'total sks saat ini' => $totalSksMengajarDosen
-            // ], 201);
-            // DEBUG
-
             $total_sks_proyeksi = $konversi_sks_jabatan + $totalSksMengajarDosen + $input_beban_sks;
-
-            // DEBUG
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Total SKS',
-            //     'total sks saat ini' => $totalSksMengajarDosen,
-            //     'total proyeksi' => $total_sks_proyeksi
-            // ], 201);
-            // DEBUG
 
             if ($total_sks_proyeksi > $maksimalSksDosen) {
                 return response()->json([
@@ -479,23 +422,6 @@ class PlottinganPengajaranController extends Controller
             'data' => $formattedData
         ]);
 
-        // $rawData = PlottinganPengajaran; -> ambil data dari Model Plottingan Pnegajaran Relasi ke Tabel Mapping_kelas_matakuliah, matakuliah, pic, koordinatorMatakuliah
-        // $data = [
-        //     'id_matakuliah',
-        //     'nama_matakuliah',
-        //     'nama_pic',
-        //     'kode_dosen',
-        //     'mandatory_status',
-        //     'tingkat_matakuliah',
-        //     'sks/kredit',
-        //     'nama_kelas',
-        //     'praktikum',
-        //     'kode_dosen_koordinator',
-        //     'tahun_ajaran',
-        //     'hour_target',
-        //     'team_teaching',
-        //     'matakuliah_eksepsi'
-        // ];
     }
 
     public function exportHasilPlottinganToExcel($id_tahun_ajaran)
