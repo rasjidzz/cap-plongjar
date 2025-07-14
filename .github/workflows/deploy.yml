@@ -22,79 +22,59 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_PRIVATE_KEY }}
           script: |
-            # Navigasi ke direktori project utama di VPS
             cd ${{ secrets.PROJECT_PATH }} # PROJECT_PATH = /path/to/plongjarv1
 
-            # Masuk ke direktori backend untuk update dari Git
-            echo "▶️ Updating backend code from repository..."
+            echo "Updating backend code from repository..."
             cd backend
             git config pull.rebase false
             git reset --hard origin/development
             git clean -df
             git pull origin development
-            echo "✅ Backend code updated."
+            echo "Backend code updated."
 
-            # --- Bagian Kunci untuk Izin dan APP_KEY ---
-            echo "▶️ Setting permissions for storage and .env..."
+            echo "Setting permissions for storage and .env..."
             sudo chown -R $USER:www-data storage bootstrap/cache
             sudo chmod -R 775 storage bootstrap/cache
             sudo chown $USER:www-data .env
             sudo chmod 664 .env
-            echo "✅ Permissions set."
+            echo "Permissions set."
 
-            # Kembali ke direktori project utama untuk docker compose commands
             cd ..
 
-            # --- Pastikan service 'app' berjalan untuk perintah Artisan ---
-            echo "▶️ Ensuring backend container is running for Artisan commands..."
+            echo "Ensuring backend container is running for Artisan commands..."
             docker compose up -d app # Start atau update kontainer 'app'
-            echo "✅ Backend container running."
+            echo "Backend container running."
 
-            # Bersihkan Laravel cache sebelum operasi kunci atau migrasi
-            echo "▶️ Clearing Laravel config and cache..."
-            # Gunakan --env APP_KEY=${APP_KEY} untuk memastikan kunci dibaca saat membersihkan cache
+            echo "Clearing Laravel config and cache..."
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan config:clear
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan cache:clear
-            echo "✅ Laravel cache cleared."
+            echo "Laravel cache cleared."
 
-            # Generate APP_KEY jika belum ada atau kosong (ini akan ditulis ke .env di host)
-            # Ini adalah fallback jika APP_KEY_VPS di secret belum ada
             APP_KEY_STATUS=$(docker compose exec -e APP_KEY="${APP_KEY}" app php -r "echo env('APP_KEY');" || true)
             if [ -z "$APP_KEY_STATUS" ] || [ "$APP_KEY_STATUS" = "null" ]; then
-                echo "▶️ APP_KEY is missing or empty. Generating new key..."
+                echo "APP_KEY is missing or empty. Generating new key..."
                 docker compose exec app php artisan key:generate
-                echo "✅ APP_KEY generated."
+                echo "APP_KEY generated."
             else
-                echo "✅ APP_KEY already set."
+                echo "APP_KEY already set."
             fi
 
-            # --- Akhir Perbaikan APP_KEY & Cache ---
-
-            # Bangun ulang image Docker untuk service 'app'
-            # Ini penting jika ada perubahan Dockerfile atau Composer deps
-            echo "▶️ Rebuilding backend Docker image..."
+            echo "Rebuilding backend Docker image..."
             docker compose build app
-            echo "✅ Docker image rebuilt."
+            echo "Docker image rebuilt."
 
-            # Restart kontainer aplikasi
-            # Ini akan membuat kontainer baru dari image yang baru dan environment yang benar
-            echo "▶️ Restarting application container..."
+            echo "Restarting application container..."
             docker compose up -d app --force-recreate
-            echo "✅ Application container restarted."
+            echo "Application container restarted."
 
-            # Jalankan perintah database migration
-            echo "▶️ Running database migrations..."
-            # Injeksi APP_KEY lagi untuk perintah migrate
+            echo "Running database migrations..."
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan migrate:fresh --seed --force
-            echo "✅ Database migrations complete."
+            echo "Database migrations complete."
 
-            # Optimasi cache Laravel
-            echo "▶️ Clearing and rebuilding application cache..."
-            # Injeksi APP_KEY lagi untuk perintah cache
+            echo "Clearing and rebuilding application cache..."
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan config:cache
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan route:cache
             docker compose exec -e APP_KEY="${APP_KEY}" app php artisan view:cache
-            # HAPUS BARIS INI: `docker compose exec app php artisan key:generate` karena sudah di atas
-            echo "✅ Application cache rebuilt."
+            echo "Application cache rebuilt."
 
-            echo "🚀 Deployment to development finished successfully!"
+            echo "Deployment to development finished successfully!"

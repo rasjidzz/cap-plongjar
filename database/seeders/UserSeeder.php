@@ -171,5 +171,13 @@ class UserSeeder extends Seeder
             'password' => Hash::make('password'),
             'nip' => '1980010112340012',
         ]);
+        for ($i = 13; $i <= 52; $i++) {
+            User::create([
+                'name' => "User Dummy $i",
+                'email' => "user_dummy_$i@example.com",
+                'password' => Hash::make('password'),
+                'nip' => '198001011234' . str_pad($i, 4, '0', STR_PAD_LEFT),
+            ]);
+        }
     }
 }

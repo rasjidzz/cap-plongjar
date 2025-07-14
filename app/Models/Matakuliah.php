@@ -22,7 +22,7 @@ class Matakuliah extends Model
         'mandatory_status',
         'mode_perkuliahan',
         'matakuliah_eksepsi',
-        'matakuliah_eksepsi'
+        'tingkat_matakuliah'
     ];
 
     // Relasi dengan model Pic
