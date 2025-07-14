@@ -197,5 +197,28 @@ class UserRoleSeeder extends Seeder
             'created_at' => $now,
             'updated_at' => $now,
         ]);
+        $programStudiIds = [1, 2, 3];
+        $kelompokKeahlianIds = [1, 2, 3];
+
+        for ($userId = 13; $userId <= 52; $userId++) {
+            $roleId = rand(2, 5);
+
+            if (in_array($roleId, [2, 4])) {
+                $roleableType = "App\\Models\\ProgramStudi";
+                $roleableId = collect($programStudiIds)->random();
+            } else {
+                $roleableType = "App\\Models\\KelompokKeahlian";
+                $roleableId = collect($kelompokKeahlianIds)->random();
+            }
+
+            User_Role::create([
+                'user_id' => $userId,
+                'role_id' => $roleId,
+                'roleable_id' => $roleableId,
+                'roleable_type' => $roleableType,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+        }
     }
 }
