@@ -160,17 +160,10 @@ class PlottinganPengajaranController extends Controller
             }
 
             // Proses Validasi Otorisasi Role
-
             $user = $request->user();
             $user->loadMissing('roles.pivot');
             $picOfMatakuliah = $matakuliah->pic;
             $picName = $picOfMatakuliah->name;
-
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Debug Role',
-            //     'role' => $user->roles
-            // ], 201);
 
             $isAuthorized = false;
             $userHasRelevantRole = false;
@@ -203,23 +196,7 @@ class PlottinganPengajaranController extends Controller
                 }
             }
 
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Anda memiliki role yang sesuai untuk melakukan aksi ini.',
-            //     'role' => [
-            //         $isAuthorized,
-            //         $userHasRelevantRole
-            //     ]
-            // ], 201);
-
             if ($userHasRelevantRole && !$isAuthorized) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
-                ], 403);
-            }
-
-            if (!$isAuthorized && $userHasRelevantRole) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Anda tidak berwenang melakukan plotting untuk mata kuliah dengan PIC (' . $picName . '). Program Studi/Kelompok Keahlian Anda tidak sesuai.',
@@ -246,15 +223,6 @@ class PlottinganPengajaranController extends Controller
                 ], 403);
             }
 
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Anda memiliki role yang sesuai untuk melakukan aksi ini.',
-            //     'role' => [
-            //         $isSuperAdmin,
-            //         $isAuthorized,
-            //         $userHasRelevantRole
-            //     ]
-            // ], 201);
             // Proses Validasi Otorisasi Role
 
             $sks_matakuliah = $matakuliah->sks;
@@ -323,37 +291,13 @@ class PlottinganPengajaranController extends Controller
             $konversi_sks_jabatan = 0;
             if ($dosenPengajar->id_jabatan_struktural !== null) {
                 $konversi_sks_jabatan = (int)$dosenPengajar->jabatanStruktural->konversi_sks;
-                // DEBUG
-                // return response()->json([
-                //     'success' => true,
-                //     'message' => 'Jabatan Struktural.',
-                //     'sks_jabatan' => $konversi_sks_jabatan
-                // ], 201);
-                // DEBUG
             }
 
             $id_tahun_ajaran = (int)$mapping_matkul->id_tahun_ajaran;
             $maksimalSksDosen = 16;
             $totalSksMengajarDosen = $dosenPengajar->getTotalSksMengajarPadaTahunAjaran($id_tahun_ajaran);
 
-            // DEBUG
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Total SKS',
-            //     'total sks saat ini' => $totalSksMengajarDosen
-            // ], 201);
-            // DEBUG
-
             $total_sks_proyeksi = $konversi_sks_jabatan + $totalSksMengajarDosen + $input_beban_sks;
-
-            // DEBUG
-            // return response()->json([
-            //     'success' => true,
-            //     'message' => 'Total SKS',
-            //     'total sks saat ini' => $totalSksMengajarDosen,
-            //     'total proyeksi' => $total_sks_proyeksi
-            // ], 201);
-            // DEBUG
 
             if ($total_sks_proyeksi > $maksimalSksDosen) {
                 return response()->json([
@@ -682,7 +626,6 @@ class PlottinganPengajaranController extends Controller
 
     public function exportHasilPlottinganByProdiDanTahunAjaranToExcel($id_tahun_ajaran, $id_program_studi)
     {
-        // Validasi sederhana
         $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
         $programStudi = ProgramStudi::find($id_program_studi);
 
@@ -690,14 +633,12 @@ class PlottinganPengajaranController extends Controller
             abort(404, 'Tahun ajaran atau program studi tidak ditemukan.');
         }
 
-        // Buat nama file yang dinamis
         $fileName = 'hasil_plottingan_prodi_'
             . str_replace('', '_', $programStudi->nama) . '_'
             . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_'
             . $tahunAjaran->semester . '.xlsx';
         // . str_replace(' ', '_', $programStudi->nama) . '.xlsx';
 
-        // Panggil class Export dan picu download
         return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
     }
 

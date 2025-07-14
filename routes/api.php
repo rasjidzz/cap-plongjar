@@ -148,7 +148,6 @@ Route::prefix('v1')->group(function () {
             Route::get('/dosen/{id_dosen}/riwayat-pengajaran', [DosenController::class, 'getRiwayatPengajaran']);
             Route::get('/dosen/{id_dosen}/beban-sks-aktif', [DosenController::class, 'getBebanSksDosenByIdDosenandActiveTahunAjaran']);
             Route::get('/dosen/{id_dosen}/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getBebanSksDosenByIdDosenandIdTahunAjaran']);
-            // Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
         });
         Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab,ProgramStudi,KelompokKeahlian'])->group(function () {
             Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
