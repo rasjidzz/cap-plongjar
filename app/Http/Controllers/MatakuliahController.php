@@ -91,7 +91,7 @@ class MatakuliahController extends Controller
             }
 
             // 5. Bangun query untuk mengambil mata kuliah berdasarkan id_pic
-            $query = Matakuliah::query()->where('id_pic', $pic->id);
+            $query = Matakuliah::query()->where('id_pic', $pic->id)->with('pic');
 
             // Tambahkan fungsionalitas pencarian dan paginasi
             $searchNamaMatakuliah = $request->query('nama_matakuliah', '');
@@ -162,7 +162,7 @@ class MatakuliahController extends Controller
             // ], 200);
 
             // 5. Bangun query untuk mengambil mata kuliah berdasarkan id_pic
-            $query = Matakuliah::query()->where('id_pic', $pic->id);
+            $query = Matakuliah::query()->where('id_pic', $pic->id)->with('pic');
 
             // Tambahkan fungsionalitas pencarian dan paginasi
             $searchNamaMatakuliah = $request->query('nama_matakuliah', '');
