@@ -31,7 +31,7 @@ class DatabaseSeeder extends Seeder
                 UserRoleSeeder::class,
                 TahunAjaranSeeder::class,
                 MappingKelasMatakuliahSeeder::class,
-                PlottinganPengajaranSeeder::class
+                // PlottinganPengajaranSeeder::class
             ]
         );
     }

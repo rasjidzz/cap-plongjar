@@ -22,12 +22,17 @@ class Matakuliah extends Model
         'mandatory_status',
         'mode_perkuliahan',
         'matakuliah_eksepsi',
-        'tingkat_matakuliah'
+        'tingkat_matakuliah',
+        'created_by',
     ];
 
     // Relasi dengan model Pic
     public function pic()
     {
         return $this->belongsTo(Pic::class, 'id_pic');
+    }
+    public function createdBy()
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 }
