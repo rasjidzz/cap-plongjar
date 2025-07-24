@@ -23,6 +23,7 @@ return new class extends Migration
             $table->enum('mode_perkuliahan', ['online', 'onsite', 'hybrid']);
             $table->enum('matakuliah_eksepsi', ['ya', 'tidak']);
             $table->enum('tingkat_matakuliah', ['Tingkat 1', 'Tingkat 2', 'Tingkat 3', 'Tingkat 4']);
+            $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->timestamps();
             $table->softDeletes();
 

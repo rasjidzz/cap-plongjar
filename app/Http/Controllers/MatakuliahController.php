@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 
 class MatakuliahController extends Controller
 {
@@ -52,7 +53,8 @@ class MatakuliahController extends Controller
             'data' => $data
         ]);
     }
-    public function getMatakuliahByPicProgramStudi(Request $request)
+    // OLD VERSION getMatakuliahByPicProgramStudi
+    public function getMatakuliahByPicProgramStudiOld(Request $request)
     {
         try {
             // 1. Dapatkan user yang sedang login
@@ -106,6 +108,89 @@ class MatakuliahController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Daftar Mata Kuliah untuk PIC "' . $assignedEntityName . '" berhasil dimuat.',
+                'data' => $matakuliahs
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server.'
+            ], 500);
+        }
+    }
+    public function getMatakuliahByPicProgramStudi(Request $request)
+    {
+        try {
+            // --- Langkah 1: Dapatkan Konteks User (Prodi/KK) ---
+            $user = $request->user();
+            $user->loadMissing('roles');
+
+            $assignedEntityName = null;
+            $authRoleableId = null;
+            $authRoleableType = null;
+
+            foreach ($user->roles as $role) {
+                if (($role->name === 'ProgramStudi' || $role->name === 'KelompokKeahlian') && isset($role->pivot->roleable_id)) {
+                    $authRoleableId = $role->pivot->roleable_id;
+                    $authRoleableType = $role->pivot->roleable_type;
+
+                    if ($authRoleableType === ProgramStudi::class || $authRoleableType === 'App\\Models\\ProgramStudi') {
+                        $assignedEntityName = ProgramStudi::find($authRoleableId)?->nama;
+                    } elseif ($authRoleableType === KelompokKeahlian::class || $authRoleableType === 'App\\Models\\KelompokKeahlian') {
+                        $assignedEntityName = KelompokKeahlian::find($authRoleableId)?->nama;
+                    }
+
+                    if ($assignedEntityName) break;
+                }
+            }
+
+            if (!$assignedEntityName || !$authRoleableId || !$authRoleableType) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Anda tidak ter-assign ke Program Studi atau Kelompok Keahlian yang valid.',
+                ], 403);
+            }
+
+            // --- Langkah 2: Dapatkan Kriteria Filter ---
+            $pic = Pic::where('name', $assignedEntityName)->first();
+            $picId = $pic ? $pic->id : null;
+
+            $creatorUserIds = DB::table('user_roles')
+                ->where('roleable_id', $authRoleableId)
+                ->where('roleable_type', $authRoleableType)
+                ->pluck('user_id')
+                ->toArray();
+
+            // --- Langkah 3: Bangun Query Utama ---
+            $query = Matakuliah::query()->with(['pic', 'createdBy:id,name']);
+
+            $query->where(function ($q) use ($picId, $creatorUserIds) {
+                // Kondisi 1: Matakuliah yang PIC-nya adalah Prodi/KK user
+                if ($picId) {
+                    $q->where('id_pic', $picId);
+                }
+
+                // Kondisi 2: ATAU matakuliah yang dibuat oleh anggota Prodi/KK yang sama
+                if (!empty($creatorUserIds)) {
+                    $q->orWhereIn('created_by', $creatorUserIds);
+                }
+            });
+
+            // Tambahkan fungsionalitas pencarian dan paginasi
+            $searchTerm = $request->query('search', '');
+            $perPage = $request->query('per_page', 15);
+
+            $query->when($searchTerm, function ($q) use ($searchTerm) {
+                $q->where(function ($subQuery) use ($searchTerm) {
+                    $subQuery->where('nama_matakuliah', 'like', "%{$searchTerm}%")
+                        ->orWhere('kode_matkul', 'like', "%{$searchTerm}%");
+                });
+            });
+
+            $matakuliahs = $query->orderBy('nama_matakuliah', 'asc')->paginate($perPage);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daftar Mata Kuliah PIC untuk "' . $assignedEntityName . '" berhasil dimuat. (Beserta Matakuliah Created By Sendiri)',
                 'data' => $matakuliahs
             ]);
         } catch (\Exception $e) {
@@ -310,14 +395,20 @@ class MatakuliahController extends Controller
 
             $hour_target = $validatedData['sks'] * 16;
 
-            $dataToCreate = array_merge($validatedData, ['hour_target' => $hour_target]);
+            // $dataToCreate = array_merge($validatedData, ['hour_target' => $hour_target]);
+
+            $dataToCreate = array_merge($validatedData, [
+                'hour_target' => $hour_target,
+                'created_by' => auth()->id()
+            ]);
 
             $matakuliah = Matakuliah::create($dataToCreate);
 
             return response()->json([
                 'success' => true,
                 'message' => 'Matakuliah berhasil ditambahkan.',
-                'data' => $matakuliah->load('pic') //
+                // 'data' => $matakuliah->load('pic')
+                'data' => $matakuliah->load(['pic', 'createdBy:id,name'])
             ], 201);
         } catch (ValidationException $e) {
             return response()->json([
