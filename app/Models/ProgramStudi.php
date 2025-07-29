@@ -26,6 +26,10 @@ class ProgramStudi extends Model
             ]);
         });
     }
+    public function dosens()
+    {
+        return $this->hasMany(Dosen::class, 'id_program_studi');
+    }
     public function mappingKelasMatakuliahs()
     {
         return $this->hasMany(MappingKelasMatakuliah::class, 'id_program_studi');

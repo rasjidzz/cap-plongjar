@@ -41,6 +41,7 @@ class DosenFactory extends Factory
     {
         $kode = strtoupper($this->faker->lexify('???')); // 3 huruf
         $idJabatanStruktural = $this->faker->optional(0.5)->numberBetween(1, 14); // 50% chance null
+        $id_program_studi = $this->faker->numberBetween(1, 4);
 
         return [
             'name' => $this->faker->name(),
@@ -67,6 +68,7 @@ class DosenFactory extends Factory
             'pendidikan_terakhir' => $this->faker->randomElement(['S-1', 'S-2', 'S-3']),
             'id_kelompok_keahlian' => $this->faker->numberBetween(1, 3),
             'id_jabatan_struktural' => $idJabatanStruktural,
+            'id_program_studi' => $id_program_studi
         ];
     }
 }

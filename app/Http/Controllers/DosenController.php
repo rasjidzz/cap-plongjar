@@ -53,8 +53,11 @@ class DosenController extends Controller
         $searchKodeDosen = $request->query('kode_dosen', '');
         $perPage = $request->query('per_page', 10);
 
-        $query = Dosen::with('kelompokKeahlian:id,nama')
-            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian');
+        $query = Dosen::with([
+            'kelompokKeahlian:id,nama',
+            'programStudi:id,nama'
+        ])
+            ->select('id', 'name', 'lecturer_code', 'nip', 'status_pegawai', 'id_kelompok_keahlian', 'id_program_studi');
 
         $query->when($searchNama, function ($q) use ($searchNama) {
             return $q->where('name', 'like', "%{$searchNama}%");
@@ -296,7 +299,8 @@ class DosenController extends Controller
     {
         $dosen = Dosen::with([
             'kelompokKeahlian:id,nama',
-            'jabatanStruktural:id,nama'
+            'jabatanStruktural:id,nama',
+            'programStudi:id,nama'
         ])
             ->select(
                 'id',
@@ -306,6 +310,7 @@ class DosenController extends Controller
                 'nip',
                 'nidn',
                 'id_kelompok_keahlian',
+                'id_program_studi',
                 'status_pegawai',
                 'email',
                 'jabatan_fungsional_akademik',
@@ -329,7 +334,7 @@ class DosenController extends Controller
                 'nama_dosen' => $dosen->name,
                 'kode_dosen' => $dosen->lecturer_code,
                 'jabatan' => $dosen->jabatanStruktural?->nama,
-                'home_base' => null,
+                'home_base' => $dosen->programStudi?->nama,
                 'nip' => $dosen->nip,
                 'nidn' => $dosen->nidn,
                 'bidang_keahlian' => $dosen->kelompokKeahlian?->nama,
@@ -511,7 +516,7 @@ class DosenController extends Controller
         $searchTerm = $request->query('search', '');
         $perPage = $request->query('per_page', 10);
 
-        $dosenQuery = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks']);
+        $dosenQuery = Dosen::with(['kelompokKeahlian:id,nama', 'jabatanStruktural:id,nama,konversi_sks', 'programStudi:id,nama']);
 
         if (!empty($searchTerm)) {
             $dosenQuery->where('name', 'LIKE', "%{$searchTerm}%");
@@ -556,6 +561,7 @@ class DosenController extends Controller
                 'kode_dosen'        => $dosen->lecturer_code,
                 'nama_dosen'        => $dosen->name,
                 'kelompok_keahlian' => $dosen->kelompokKeahlian ? $dosen->kelompokKeahlian->nama : null,
+                'program_studi'     => $dosen->programStudi ? $dosen->programStudi->nama : null,
                 'jfa'               => $dosen->jabatan_fungsional_akademik,
                 'jabatan_struktural' => $nama_jabatan_struktural,
                 'sks_ekuivalen_jabatan' => $konversi_sks_jabatan,
@@ -716,7 +722,11 @@ class DosenController extends Controller
             ], 404);
         }
 
-        $dosen = Dosen::with('jabatanStruktural')->find($id_dosen);
+        $dosen = Dosen::with([
+            'jabatanStruktural:id,nama',
+            'programStudi:id,nama'
+        ])
+            ->find($id_dosen);
 
         if (!$dosen) {
             return response()->json([
@@ -754,7 +764,8 @@ class DosenController extends Controller
         $responseData = [
             'kode_dosen'                => $dosen->lecturer_code,
             'nama_dosen'                => $dosen->name,
-            'kelompok_keahlian'         => $dosen->kelompokKeahlian?->name,
+            'kelompok_keahlian'         => $dosen->kelompokKeahlian?->nama,
+            'program_studi'             => $dosen->programStudi->nama,
             'jfa'                       => $dosen->jabatan_fungsional_akademik,
             'jabatan_struktural'        => $dosen->jabatanStruktural?->nama,
             'sks_ekuivalen_jabatan'     => $konversi_sks_jabatan,

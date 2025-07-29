@@ -44,6 +44,7 @@ return new class extends Migration
             ]);
 
             $table->unsignedBigInteger('id_kelompok_keahlian');
+            $table->foreignId('id_program_studi')->constrained('program_studis')->onDelete('restrict');
             $table->timestamps();
             $table->foreign('id_jabatan_struktural')->references('id')->on('jabatan_strukturals')->onDelete('set null');
             $table->foreign('id_kelompok_keahlian')->references('id')->on('kelompok_keahlians')->onDelete('cascade');

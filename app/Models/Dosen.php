@@ -21,8 +21,13 @@ class Dosen extends Model
         'pendidikan_terakhir',
         'nidn',
         'id_kelompok_keahlian',
+        'id_program_studi'
     ];
 
+    public function programStudi()
+    {
+        return $this->belongsTo(ProgramStudi::class, 'id_program_studi');
+    }
     public function kelompokKeahlian()
     {
         return $this->belongsTo(KelompokKeahlian::class, 'id_kelompok_keahlian');
