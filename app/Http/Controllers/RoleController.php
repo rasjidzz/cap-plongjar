@@ -201,13 +201,56 @@ class RoleController extends Controller
         return response()->json($data);
     }
 
+    public function assignRoleV2(Request $request, $id_role)
+    {
+        $request->validate([
+            'user_id' => 'required|integer',
+            // 'roleable_id' => 'nullable|integer',
+            // 'roleable_type' => 'nullable|string'
+        ]);
+
+        $user = User::find($request->user_id);
+        if (!$user) {
+            return response()->json([
+                'message' => 'User not Found'
+            ], 401);
+        }
+
+        $role = Role::find($id_role);
+        if (!$role) {
+            return response()->json([
+                'message' => 'Role not Found'
+            ], 401);
+        }
+        $alreadyAssigned = User_Role::where('user_id', $user->id)
+            ->where('role_id', $role->id)
+            // ->where('roleable_id', $request->roleable_id)
+            // ->where('roleable_type', $request->roleable_type)
+            ->exists();
+
+        if ($alreadyAssigned) {
+            return response()->json([
+                'message' => 'User already has this role assigned'
+            ], 409);
+        }
+
+        User_Role::create([
+            'user_id' => $user->id,
+            'role_id' => $role->id,
+            // 'roleable_id' => $request->roleable_id,
+            // 'roleable_type' => $request->roleable_type
+        ]);
+
+        return response()->json([
+            'message' => 'User Assigned to Role Successfully',
+        ]);
+    }
+
     public function assignRole(Request $request)
     {
         $request->validate([
             'user_id' => 'required|integer',
             'role_id' => 'required|integer',
-            // 'roleable_id' => 'required|integer',
-            // 'roleable_type' => 'required|string'
             'roleable_id' => 'nullable|integer',
             'roleable_type' => 'nullable|string'
         ]);
@@ -324,6 +367,23 @@ class RoleController extends Controller
             ], 404);
         }
     }
+    public function destroy($id_role, $id_user)
+    {
+        $deleted = User_Role::where('user_id', $id_user)
+            ->where('role_id', $id_role)
+            ->delete();
+
+        if ($deleted) {
+            return response()->json([
+                'message' => 'Role revoked successfully from user'
+            ]);
+        } else {
+            return response()->json([
+                'message' => 'Role not found for this user'
+            ], 404);
+        }
+    }
+
     public function getAllUnassignedUser()
     {
         $unassignedUsers = User::whereDoesntHave('roles')->get();

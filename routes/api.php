@@ -49,13 +49,22 @@ Route::prefix('v1')->group(function () {
     Route::prefix('roles')->group(function () {
         Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
             Route::get('/', [RoleController::class, 'getAllRoles']);
-            Route::get('/getAllUser', [RoleController::class, 'getAllUser']);
-            Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']);
-            Route::get('/getAllUnassignedUser', [RoleController::class, 'getAllUnassignedUser']);
-            Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']);
-            Route::post('/assignRole', [RoleController::class, 'assignRole']);
-            Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
+
+            // NEW UPDATED
+            Route::get('/assigned-users', [RoleController::class, 'getAllAssignedUserRole']);
+            Route::get('/unassigned-users', [RoleController::class, 'getAllUnassignedUser']);
+            Route::get('/{id_role}/users', [RoleController::class, 'getAllUserByRole']);
+            Route::post('/{id_role}/users', [RoleController::class, 'assignRoleV2']);
+            Route::delete('/{id_role}/users/{id_user}/', [RoleController::class, 'destroy']);
             Route::post('/assign-scoped-role', [RoleController::class, 'assignScopedRole']);
+
+            // => NO LONGER USED
+            Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']); // => NO LONGER USED
+            Route::get('/getAllUser', [RoleController::class, 'getAllUser']); // => NO LONGER USED -> /USERS
+            Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']); // => NO LONGER USED
+            Route::post('/assignRole', [RoleController::class, 'assignRole']); // => NOT FULLY RESTFUL
+            Route::post('/revokeRole', [RoleController::class, 'revokeRole']);  // => NOT FULLY RESTFUL
+            Route::get('/getAllUnassignedUser', [RoleController::class, 'getAllUnassignedUser']); // => NO LONGER USED
         });
     });
     // 2. Role Management Stuff
