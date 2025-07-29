@@ -74,8 +74,9 @@ Route::prefix('v1')->group(function () {
         // SUPER_ADMIN, PROGRAM_STUDI, KELOMPOK_KEAHLIAN
         Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
             // PIC MANAGEMENT
-            Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
-            Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
+            // Route::post('/addPicData', [MasterDataController::class, 'AddPic']); => NO LONGER USED
+            Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']); // => NO LONGER USED
+            Route::get('/pics', [MasterDataController::class, 'getAllPic']);
 
             // DOSEN MANAGEMENT
             Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
@@ -117,10 +118,16 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
+            Route::prefix('dosen')->group(function () {
+                Route::post('/{id_dosen}/jabatan-struktural', [DosenController::class, 'assignJabatanStrukturalV2']);
+                Route::delete('/{id_dosen}/jabatan-struktural', [DosenController::class, 'revokeJabatanStrukturalDosenV2']);
+            });
             // JABATAN STRUKTURAL MANAGEMENT (SUPER_ADMIN ONLY)
             Route::apiResource('jabatanstruktural', JabatanStrukturalController::class);
-            Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']);
-            Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']);
+            // NO LONGER USED
+            Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']); // => INI DIUBAH PRINSIP REST
+            Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']); // => INI DIUBAH PRINSIP REST
+            // NO LONGER USED
             Route::apiResource('/program-studi', ProgramStudiController::class);
 
             // Tahun Ajaran Management (SUPER_ADMIN ONLY)
