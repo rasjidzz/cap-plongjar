@@ -49,13 +49,22 @@ Route::prefix('v1')->group(function () {
     Route::prefix('roles')->group(function () {
         Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
             Route::get('/', [RoleController::class, 'getAllRoles']);
-            Route::get('/getAllUser', [RoleController::class, 'getAllUser']);
-            Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']);
-            Route::get('/getAllUnassignedUser', [RoleController::class, 'getAllUnassignedUser']);
-            Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']);
-            Route::post('/assignRole', [RoleController::class, 'assignRole']);
-            Route::post('/revokeRole', [RoleController::class, 'revokeRole']);
+
+            // NEW UPDATED
+            Route::get('/assigned-users', [RoleController::class, 'getAllAssignedUserRole']);
+            Route::get('/unassigned-users', [RoleController::class, 'getAllUnassignedUser']);
+            Route::get('/{id_role}/users', [RoleController::class, 'getAllUserByRole']);
+            Route::post('/{id_role}/users', [RoleController::class, 'assignRoleV2']);
+            Route::delete('/{id_role}/users/{id_user}/', [RoleController::class, 'destroy']);
             Route::post('/assign-scoped-role', [RoleController::class, 'assignScopedRole']);
+
+            // => NO LONGER USED
+            Route::get('/getAllUserByRole/{id_role}', [RoleController::class, 'getAllUserByRole']); // => NO LONGER USED
+            Route::get('/getAllUser', [RoleController::class, 'getAllUser']); // => NO LONGER USED -> /USERS
+            Route::get('/getAllAssignedUserRoles', [RoleController::class, 'getAllAssignedUserRole']); // => NO LONGER USED
+            Route::post('/assignRole', [RoleController::class, 'assignRole']); // => NOT FULLY RESTFUL
+            Route::post('/revokeRole', [RoleController::class, 'revokeRole']);  // => NOT FULLY RESTFUL
+            Route::get('/getAllUnassignedUser', [RoleController::class, 'getAllUnassignedUser']); // => NO LONGER USED
         });
     });
     // 2. Role Management Stuff
@@ -65,8 +74,9 @@ Route::prefix('v1')->group(function () {
         // SUPER_ADMIN, PROGRAM_STUDI, KELOMPOK_KEAHLIAN
         Route::middleware(['auth:sanctum', 'role:Superadmin,ProgramStudi,KelompokKeahlian'])->group(function () {
             // PIC MANAGEMENT
-            Route::post('/addPicData', [MasterDataController::class, 'AddPic']);
-            Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']);
+            // Route::post('/addPicData', [MasterDataController::class, 'AddPic']); => NO LONGER USED
+            Route::get('/getAllPic', [MasterDataController::class, 'getAllPic']); // => NO LONGER USED
+            Route::get('/pics', [MasterDataController::class, 'getAllPic']);
 
             // DOSEN MANAGEMENT
             Route::post('/addDosenData', [MasterDataController::class, 'AddDosenData']);
@@ -108,10 +118,16 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware(['auth:sanctum', 'role:Superadmin'])->group(function () {
+            Route::prefix('dosen')->group(function () {
+                Route::post('/{id_dosen}/jabatan-struktural', [DosenController::class, 'assignJabatanStrukturalV2']);
+                Route::delete('/{id_dosen}/jabatan-struktural', [DosenController::class, 'revokeJabatanStrukturalDosenV2']);
+            });
             // JABATAN STRUKTURAL MANAGEMENT (SUPER_ADMIN ONLY)
             Route::apiResource('jabatanstruktural', JabatanStrukturalController::class);
-            Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']);
-            Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']);
+            // NO LONGER USED
+            Route::post('/assignjabatantodosen', [DosenController::class, 'assignJabatanStruktural']); // => INI DIUBAH PRINSIP REST
+            Route::post('/revokejabatandosen', [DosenController::class, 'revokeJabatanStrukturalDosen']); // => INI DIUBAH PRINSIP REST
+            // NO LONGER USED
             Route::apiResource('/program-studi', ProgramStudiController::class);
 
             // Tahun Ajaran Management (SUPER_ADMIN ONLY)

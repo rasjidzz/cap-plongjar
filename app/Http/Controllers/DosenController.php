@@ -347,6 +347,45 @@ class DosenController extends Controller
         ]);
     }
 
+    public function assignJabatanStrukturalV2(Request $request, $id_dosen)
+    {
+        $validatedData = $request->validate([
+            'id_jabatan_struktural' => 'required|integer|exists:jabatan_strukturals,id',
+        ]);
+
+        try {
+            $dosen = Dosen::find($id_dosen);
+
+            if (!$dosen) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dosen tidak ditemukan.',
+                ], 404);
+            }
+
+            $dosen->id_jabatan_struktural = $validatedData['id_jabatan_struktural'];
+            $dosen->save();
+
+            $message = 'Jabatan Struktural berhasil di-assign ke Dosen.';
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server.',
+                'error Message' => $e
+            ], 500);
+        }
+    }
     public function assignJabatanStruktural(Request $request)
     {
         $validatedData = $request->validate([
@@ -384,6 +423,43 @@ class DosenController extends Controller
                 'success' => false,
                 'message' => 'Terjadi kesalahan pada server.',
                 'error Message' => $e
+            ], 500);
+        }
+    }
+    public function revokeJabatanStrukturalDosenV2(Request $request, $id_dosen)
+    {
+        // $validatedData = $request->validate([
+        //     'id_dosen' => 'required|integer|exists:dosens,id',
+        // ]);
+
+        try {
+            $dosen = Dosen::find($id_dosen);
+
+            if (!$dosen) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Dosen tidak ditemukan.',
+                ], 404);
+            }
+
+            $dosen->id_jabatan_struktural = null;
+            $dosen->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Jabatan Struktural Dosen berhasil dilepas/direvoke.',
+                'data' => $dosen,
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validasi gagal.',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Terjadi kesalahan pada server saat melepas jabatan.',
             ], 500);
         }
     }
