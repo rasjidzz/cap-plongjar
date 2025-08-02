@@ -10,12 +10,42 @@ class KelompokKeahlianController extends Controller
     /**
      * Display a listing of the resource.
      */
+    public function getAllKelompokKeahlianWithKetua(Request $request)
+    {
+        // Ambil parameter dari query string URL
+        $searchTerm = $request->query('search', '');
+        $perPage = $request->query('per_page', 15); // Default 15 item per halaman
+
+        // Mulai query dengan eager loading relasi 'ketua'
+        $query = KelompokKeahlian::with('ketua:id,name,lecturer_code');
+
+        // Terapkan filter pencarian jika ada
+        $query->when($searchTerm, function ($q) use ($searchTerm) {
+            // Mengelompokkan kondisi OR
+            $q->where('nama', 'like', "%{$searchTerm}%") // Cari berdasarkan nama Kelompok Keahlian
+                ->orWhereHas('ketua', function ($ketuaQuery) use ($searchTerm) {
+                    // Cari berdasarkan nama dosen yang menjadi ketua
+                    $ketuaQuery->where('name', 'like', "%{$searchTerm}%");
+                });
+        });
+
+        // Lakukan paginasi dan urutkan hasilnya
+        $data = $query->orderBy('nama', 'asc')->paginate($perPage);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Daftar Kelompok Keahlian beserta ketua berhasil dimuat.',
+            'data' => $data
+        ]);
+    }
     public function index()
     {
-        $kelompokKeahlian = KelompokKeahlian::all();
+        // $kelompokKeahlian = KelompokKeahlian::all();
+        $kelompokKeahlian = KelompokKeahlian::with('ketua:id,name,lecturer_code');
+        $data = $kelompokKeahlian->orderBy('nama', 'asc')->get();
         return response()->json([
             'status' => 'success',
-            'data' => $kelompokKeahlian
+            'data' => $data
         ]);
     }
     public function assignKetua(Request $request, $id_kk)

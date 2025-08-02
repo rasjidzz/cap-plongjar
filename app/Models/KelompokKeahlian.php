@@ -14,6 +14,7 @@ class KelompokKeahlian extends Model
 
     protected $fillable = [
         'nama',
+        'id_ketua_dosen'
     ];
     public function dosen()
     {
