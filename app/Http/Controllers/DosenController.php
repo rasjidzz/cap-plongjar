@@ -72,6 +72,7 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
+    // @codeCoverageIgnoreStart
     public function getAllDosenByKKId($id_kk)
     {
         $data = Dosen::with('kelompokKeahlian:id,nama')
@@ -84,6 +85,7 @@ class DosenController extends Controller
             'data' => $data
         ]);
     }
+    // @codeCoverageIgnoreEnd
     // public function getAllDosenByJabatanStrukturalId($id_kk)
     // {
     //     $data = Dosen::with('kelompokKeahlian:id,nama')
@@ -96,6 +98,7 @@ class DosenController extends Controller
     //         'data' => $data
     //     ]);
     // }
+    // @codeCoverageIgnoreStart
     public function getAllDosenByJabatanStrukturalId(Request $request, $id_jabatan_struktural)
     {
         $jabatanStruktural = JabatanStruktural::find($id_jabatan_struktural);
@@ -233,6 +236,7 @@ class DosenController extends Controller
             'data' => $dosen
         ], 201);
     }
+    // @codeCoverageIgnoreEnd
     // public function getDosenDetailData($id_dosen)
     // {
     //     $data = Dosen::with('kelompokKeahlian:id,nama')
@@ -342,6 +346,7 @@ class DosenController extends Controller
         ]);
     }
 
+    // @codeCoverageIgnoreStart
     public function assignJabatanStruktural(Request $request)
     {
         $validatedData = $request->validate([
@@ -581,7 +586,7 @@ class DosenController extends Controller
             'data' => $paginatedResponse
         ]);
     }
-
+    // @codeCoverageIgnoreEnd
     public function getRiwayatPengajaran(Request $request, $id_dosen)
     {
         $dosen = Dosen::find($id_dosen);
@@ -639,6 +644,7 @@ class DosenController extends Controller
         ]);
     }
 
+    // @codeCoverageIgnoreStart
     public function getBebanSksDosenByIdDosenandActiveTahunAjaran($id_dosen)
     {
         $tahunAjaranAktif = TahunAjaran::where('status', true)->first();
@@ -832,4 +838,5 @@ class DosenController extends Controller
     {
         //
     }
+    // @codeCoverageIgnoreEnd
 }

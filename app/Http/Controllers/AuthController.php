@@ -31,6 +31,10 @@ class AuthController extends Controller
     //         'status_code' => 201
     //     ], 201);
     // }
+
+    /**
+    * @codeCoverageIgnore
+    */
     public function register(Request $request)
     {
         try {

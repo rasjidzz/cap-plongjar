@@ -10,6 +10,9 @@ use App\Models\Role;
 use App\Models\User_Role;
 use App\Models\Dosen; // Import model Dosen
 use App\Models\KelompokKeahlian; // Dibutuhkan oleh DosenFactory
+use App\Models\JabatanStruktural; // Dibutuhkan oleh DosenFactory
+use App\Models\ProgramStudi; // Dibutuhkan oleh DosenFactory jika ada
+use App\Models\Pic; // Dibutuhkan oleh MatakuliahFactory jika ada
 
 class DosenTest extends TestCase
 {
@@ -28,11 +31,18 @@ class DosenTest extends TestCase
 
         // Buat role 'Superadmin' jika belum ada
         Role::firstOrCreate(['id' => 1, 'name' => 'Superadmin']);
+        // Buat role lain yang mungkin dibutuhkan oleh factories atau middleware
+        Role::firstOrCreate(['id' => 2, 'name' => 'ProgramStudi']);
+        Role::firstOrCreate(['id' => 3, 'name' => 'KelompokKeahlian']);
+        Role::firstOrCreate(['id' => 4, 'name' => 'LayananAkademik']);
 
-        // Buat Kelompok Keahlian dasar untuk DosenFactory
-        for ($i = 1; $i <= 5; $i++) { // Buat beberapa KK agar DosenFactory memiliki pilihan
+        // Buat data dasar untuk Foreign Key Factories
+        for ($i = 1; $i <= 10; $i++) {
             KelompokKeahlian::firstOrCreate(['id' => $i, 'nama' => 'KK ' . chr(64 + $i)]);
+            JabatanStruktural::firstOrCreate(['id' => $i, 'nama' => 'Jabatan ' . $i, 'konversi_sks' => $i]);
         }
+        Pic::firstOrCreate(['id' => 1, 'name' => 'Default PIC']);
+        ProgramStudi::firstOrCreate(['id' => 1, 'nama' => 'S1 Informatika']);
     }
 
     /**
@@ -54,8 +64,7 @@ class DosenTest extends TestCase
     }
 
     /**
-     * Test Case: FR-ADM-04View DosenTC-ADM-07 Admin dapat mencari dosen.
-     * Skenario: Admin berhasil melihat daftar semua dosen dengan paginasi default.
+     * Test Case: Admin berhasil melihat daftar semua dosen dengan paginasi default.
      * HTTP Response status code = 200 (Success)
      *
      * @return void
@@ -91,7 +100,7 @@ class DosenTest extends TestCase
                         'nip',
                         'status_pegawai',
                         'id_kelompok_keahlian',
-                        'kelompok_keahlian' => ['id', 'nama'],
+                        'kelompok_keahlian' => ['id', 'nama'], // Relasi kelompokKeahlian dimuat
                     ]
                 ],
                 'first_page_url', 'from', 'last_page', 'last_page_url',

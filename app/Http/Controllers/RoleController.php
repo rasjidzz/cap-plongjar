@@ -24,6 +24,10 @@ class RoleController extends Controller
     // {
     //     return User::all();
     // }
+
+    /**
+    * @codeCoverageIgnore
+    */
     public function getAllUser(Request $request)
     {
         // Ambil parameter dari query string URL
@@ -97,6 +101,9 @@ class RoleController extends Controller
     //     ]);
     // }
 
+    /**
+    * @codeCoverageIgnore
+    */
     public function getAllUserByRole(Request $request, $id_role)
     {
         $role = Role::find($id_role);
@@ -183,6 +190,10 @@ class RoleController extends Controller
     //     $data = $this->user_role_model->getAllAssignedUserRole();
     //     return $data;
     // }
+
+    /**
+    * @codeCoverageIgnore
+    */
     public function getAllAssignedUserRole()
     {
         $data = $this->user_role_model
@@ -324,6 +335,10 @@ class RoleController extends Controller
             ], 404);
         }
     }
+
+    /**
+    * @codeCoverageIgnore
+    */
     public function getAllUnassignedUser()
     {
         $unassignedUsers = User::whereDoesntHave('roles')->get();

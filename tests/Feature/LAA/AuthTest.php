@@ -1,7 +1,6 @@
 <?php
 
-namespace Tests\Feature\LAA; // Namespace baru untuk Layanan Akademik
-
+namespace Tests\Feature\LAA; // Name
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Foundation\Testing\WithFaker;
 use Tests\TestCase;

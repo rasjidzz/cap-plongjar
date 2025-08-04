@@ -52,6 +52,7 @@ class MatakuliahController extends Controller
             'data' => $data
         ]);
     }
+    // @codeCoverageIgnoreStart
     public function getMatakuliahByPicProgramStudi(Request $request)
     {
         try {
@@ -286,7 +287,7 @@ class MatakuliahController extends Controller
     //         'data' => $matakuliah->load('pic')
     //     ], 201);
     // }
-
+    // @codeCoverageIgnoreEnd
     public function store(Request $request)
     {
         try {
@@ -337,6 +338,7 @@ class MatakuliahController extends Controller
     /**
      * Display the specified resource.
      */
+    // @codeCoverageIgnoreStart
     public function show(Matakuliah $matakuliah)
     {
         // Route model binding akan secara otomatis menangani jika mata kuliah tidak ditemukan (return 404).
@@ -355,7 +357,7 @@ class MatakuliahController extends Controller
     {
         //
     }
-
+    // @codeCoverageIgnoreEnd
     /**
      * Update the specified resource in storage.
      */

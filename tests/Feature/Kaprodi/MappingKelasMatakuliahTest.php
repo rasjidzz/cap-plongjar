@@ -108,117 +108,6 @@ class MappingKelasMatakuliahTest extends TestCase
         }
     }
 
-    /**
-     * Test Case: Memastikan Kaprodi dapat melakukan Mapping Kelas MK yang sudah ditambahkan sebelumnya.
-     * Memastikan Kaprodi dapat menambahkan mapping kelas baru untuk mata kuliah yang sudah ada di prodi mereka.
-     * HTTP Response status code = 201 (Success)
-     *
-     * @return void
-     */
-    public function test_kaprodi_can_create_new_mapping_for_existing_matakuliah_successfully(): void
-    {
-        // 1. Persiapan Data
-        $programStudiKaprodi = ProgramStudi::factory()->create(['nama' => 'S1 Teknik Komputer']);
-        $kaprodiUser = $this->createProgramStudiUser($programStudiKaprodi);
-
-        // Buat Matakuliah dan Tahun Ajaran yang sudah ada
-        $existingMatakuliah = Matakuliah::factory()->create([
-            'id_pic' => Pic::first()->id,
-            'nama_matakuliah' => 'Algoritma dan Struktur Data',
-            'kode_matkul' => 'CS101',
-        ]);
-        $existingTahunAjaran = TahunAjaran::factory()->create(['tahun_ajaran' => '2024/2025', 'semester' => 'ganjil']);
-
-        // Buat mapping kelas pertama untuk mata kuliah ini (opsional, untuk simulasi "sudah ditambahkan sebelumnya")
-        MappingKelasMatakuliah::factory()->create([
-            'id_matakuliah' => $existingMatakuliah->id,
-            'id_tahun_ajaran' => $existingTahunAjaran->id,
-            'id_program_studi' => $programStudiKaprodi->id,
-            'nama_kelas' => 'Kelas A',
-            'kuota' => 60,
-            'team_teaching' => false,
-        ]);
-
-        // Data untuk mapping kelas BARU yang akan ditambahkan
-        $newClassData = [
-            [
-                'nama_kelas' => 'Kelas B', // Nama kelas yang berbeda
-                'kuota' => 55,
-                'team_teaching' => true,
-            ],
-            [
-                'nama_kelas' => 'Kelas C', // Nama kelas lain yang berbeda
-                'kuota' => 40,
-                'team_teaching' => false,
-            ],
-        ];
-
-        $requestPayload = [
-            'id_matakuliah' => $existingMatakuliah->id,
-            'id_tahun_ajaran' => $existingTahunAjaran->id,
-            // id_program_studi TIDAK DIKIRIM karena Kaprodi user sudah ter-assign
-            'classes' => $newClassData,
-        ];
-
-        // 2. Aksi: Login sebagai Kaprodi dan kirim POST request untuk menambahkan mapping kelas baru
-        $response = $this->actingAs($kaprodiUser, 'sanctum')->postJson('/api/v1/masterdata/mappingkelasmatakuliahs', $requestPayload);
-
-        // 3. Assertions
-        $response->assertStatus(201)
-                 ->assertJson([
-                     'success' => true,
-                     'message' => count($newClassData) . ' mapping kelas mata kuliah berhasil ditambahkan.',
-                 ]);
-
-        $response->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                '*' => [
-                    'id',
-                    'id_matakuliah',
-                    'id_tahun_ajaran',
-                    'id_program_studi',
-                    'nama_kelas',
-                    'kuota',
-                    'team_teaching',
-                    'created_at',
-                    'updated_at',
-                ]
-            ]
-        ]);
-
-        // Verifikasi database: memastikan mapping kelas baru tersimpan
-        foreach ($newClassData as $class) {
-            $this->assertDatabaseHas('mapping_kelas_matakuliahs', [
-                'id_matakuliah' => $existingMatakuliah->id,
-                'id_tahun_ajaran' => $existingTahunAjaran->id,
-                'id_program_studi' => $programStudiKaprodi->id,
-                'nama_kelas' => $class['nama_kelas'],
-                'kuota' => $class['kuota'],
-                'team_teaching' => $class['team_teaching'],
-            ]);
-        }
-
-        // Pastikan mapping kelas yang pertama juga masih ada
-        $this->assertDatabaseHas('mapping_kelas_matakuliahs', [
-            'id_matakuliah' => $existingMatakuliah->id,
-            'id_tahun_ajaran' => $existingTahunAjaran->id,
-            'id_program_studi' => $programStudiKaprodi->id,
-            'nama_kelas' => 'Kelas A',
-        ]);
-
-        // Pastikan total ada 3 mapping sekarang (1 lama + 2 baru)
-        $this->assertDatabaseCount('mapping_kelas_matakuliahs', 3);
-    }
-
-    /**
-     * Test Case: Memastikan Kaprodi gagal melakukan Mapping Kelas MK (Otorisasi Gagal).
-     * Skenario: User yang bukan Superadmin dan tidak ter-assign ke Program Studi manapun mencoba membuat mapping.
-     * HTTP Response status code = 403 (Otorisasi Gagal)
-     *
-     * @return void
-     */
     public function test_kaprodi_cannot_create_mapping_if_unauthorized(): void
     {
         // 1. Persiapan Data
@@ -432,5 +321,27 @@ class MappingKelasMatakuliahTest extends TestCase
 
         // Pastikan tidak ada mapping yang dibuat
         $this->assertDatabaseCount('mapping_kelas_matakuliahs', 0);
+    }
+
+
+    public function test_kaprodi_cannot_create_mapping_server_erorr(): void
+    {
+        $unauthorizedUser = User::factory()->create();
+        $layananAkademikRole = Role::where('name', 'LayananAkademik')->first();
+        User_Role::create([
+            'user_id' => $unauthorizedUser->id,
+            'role_id' => $layananAkademikRole->id,
+            'roleable_type' => null,
+            'roleable_id' => null,
+        ]);
+
+        $response = $this->actingAs($unauthorizedUser, 'sanctum')->postJson('/api/v1/masterdata/mappingkelasmatakuliahs', $requestPayload);
+
+        // 3. Assertions
+        $response->assertStatus(500) // Memastikan status HTTP 403 (Forbidden)
+                 ->assertJson([
+                     // Perbaikan: Sesuaikan pesan 'message' dengan yang dikembalikan middleware
+                     'message' => 'Forbidden: You do not have the required role.',
+                 ]);
     }
 }

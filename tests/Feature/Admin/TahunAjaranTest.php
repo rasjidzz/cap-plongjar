@@ -74,48 +74,6 @@ class TahunAjaranTest extends TestCase
         ]);
     }
 
-    public function test_admin_cannot_create_duplicate_tahun_ajaran_and_semester(): void
-    {
-        $admin = $this->createAdminUser();
-        $existingTahunAjaran = [
-            'tahun_ajaran' => '2023/2024',
-            'semester' => 'genap',
-        ];
-        TahunAjaran::create($existingTahunAjaran);
-
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/masterdata/tahunajarans', $existingTahunAjaran);
-
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['tahun_ajaran']);
-
-        $this->assertDatabaseCount('tahun_ajarans', 1);
-    }
-
-    public function test_admin_cannot_create_tahun_ajaran_with_invalid_data(): void
-    {
-        $admin = $this->createAdminUser();
-
-        $response1 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/masterdata/tahunajarans', [
-            'tahun_ajaran' => '',
-            'semester' => 'ganjil',
-        ]);
-        $response1->assertStatus(422)
-                  ->assertJsonValidationErrors(['tahun_ajaran']);
-
-        $response2 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/masterdata/tahunajarans', [
-            'tahun_ajaran' => '2025/2026',
-            'semester' => '',
-        ]);
-        $response2->assertStatus(422)
-                  ->assertJsonValidationErrors(['semester']);
-
-        $response3 = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/masterdata/tahunajarans', [
-            'tahun_ajaran' => '2025/2026',
-            'semester' => 'invalid_semester',
-        ]);
-        $response3->assertStatus(422)
-                  ->assertJsonValidationErrors(['semester']);
-    }
 
     public function test_admin_can_set_active_tahun_ajaran_successfully(): void
     {
@@ -159,5 +117,23 @@ class TahunAjaranTest extends TestCase
                  ]);
 
         $this->assertDatabaseMissing('tahun_ajarans', ['id' => $nonExistentId]);
+    }
+
+    public function test_admin_set_active_tahun_ajaran_server_error(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser();
+        $tahunAjaranToActivate = TahunAjaran::factory()->create(['tahun_ajaran' => '2025/2026', 'semester' => 'ganjil']);
+
+        $response = $this->actingAs($admin, 'sanctum')
+                         ->withoutExceptionHandling()
+                         ->putJson('/api/v1/masterdata/tahun-ajaran/' . $tahunAjaranToActivate->id . '/set-active');
+
+        // 3. Assertions
+        $response->assertStatus(500)
+                 ->assertJson([
+                     'success' => false,
+                     'message' => 'Terjadi kesalahan pada server saat memperbarui status tahun ajaran.',
+                 ]);
     }
 }

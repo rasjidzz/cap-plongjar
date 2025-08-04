@@ -18,7 +18,7 @@ use App\Models\KelompokKeahlian;
 use App\Models\JabatanStruktural;
 use App\Models\Pic;
 
-class PlottingPengjaranTest extends TestCase
+class PlotingPengjaranSoloTest extends TestCase
 {
     use RefreshDatabase;
     use WithFaker;
@@ -287,7 +287,7 @@ class PlottingPengjaranTest extends TestCase
         ]);
 
         // 3. Assertions
-        $response->assertStatus(404) // Memastikan status HTTP 404
+        $response->assertStatus(404)
                  ->assertJson([
                      'success' => false,
                      'message' => 'Mata Kuliah terkait dengan mapping tidak ditemukan.',

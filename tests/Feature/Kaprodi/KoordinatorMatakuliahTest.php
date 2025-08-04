@@ -183,5 +183,57 @@ class KoordinatorMatakuliahTest extends TestCase
                   ->assertJsonValidationErrors(['id_dosen', 'id_program_studi', 'id_tahun_ajaran', 'id_matakuliah']);
     }
 
-    
+        public function test_admin_assign_koordinator_by_program_studi_server_error(): void
+    {
+        // 1. Persiapan Data
+        $admin = $this->createAdminUser();
+        $dosenKoordinator = Dosen::factory()->create([
+            'id_kelompok_keahlian' => KelompokKeahlian::first()->id,
+            'id_jabatan_struktural' => JabatanStruktural::first()->id,
+        ]);
+        $programStudi = ProgramStudi::factory()->create();
+        $tahunAjaran = TahunAjaran::factory()->create();
+        $matakuliah = Matakuliah::factory()->create(['id_pic' => Pic::first()->id]);
+
+        // Buat setidaknya satu mapping yang valid agar controller mencoba memprosesnya
+        MappingKelasMatakuliah::factory()->create([
+            'id_matakuliah' => $matakuliah->id,
+            'id_tahun_ajaran' => $tahunAjaran->id,
+            'id_program_studi' => $programStudi->id,
+            'nama_kelas' => 'Kelas Error',
+        ]);
+
+        $requestPayload = [
+            'id_dosen' => $dosenKoordinator->id,
+            'id_program_studi' => $programStudi->id,
+            'id_tahun_ajaran' => $tahunAjaran->id,
+            'id_matakuliah' => $matakuliah->id,
+        ];
+
+        // 2. Aksi: Memaksa terjadinya Exception di dalam controller
+        // UNTUK MEMBUAT TEST INI LULUS, ANDA PERLU MEMODIFIKASI KoordinatorMatakuliahController@assignKoordinatorByProgramStudi SECARA TEMPORER.
+        // Contoh di KoordinatorMatakuliahController@assignKoordinatorByProgramStudi, di dalam try block,
+        // tambahkan:
+        // if ($request->input('id_dosen') === $dosenKoordinator->id && $request->input('id_matakuliah') === $matakuliah->id) {
+        //     throw new \Exception("Simulated server error during koordinator assignment.");
+        // }
+        // INGAT: HAPUS KODE INI SETELAH SELESAI PENGUJIAN.
+
+        $response = $this->actingAs($admin, 'sanctum')
+                         ->withoutExceptionHandling() // Uncomment ini untuk melihat exception asli
+                         ->postJson('/api/v1/masterdata/koordinator-matakuliah/assign-by-program-studi', $requestPayload);
+
+        // 3. Assertions
+        $response->assertStatus(500)
+                 ->assertJson([
+                     'success' => false,
+                     'message' => 'Terjadi kesalahan pada server saat mengassign koordinator secara massal berdasarkan program studi.',
+                 ]);
+
+        // Pastikan tidak ada koordinator yang dibuat atau diupdate jika ada error server
+        $this->assertDatabaseMissing('koordinator_matakuliahs', [
+            'id_dosen' => $dosenKoordinator->id,
+            'id_mapping_kelas_matakuliah' => MappingKelasMatakuliah::where('id_matakuliah', $matakuliah->id)->first()->id,
+        ]);
+    }
 }

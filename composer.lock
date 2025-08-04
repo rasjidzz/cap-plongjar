@@ -4205,8 +4205,10 @@
         },
         {
             "name": "symfony/clock",
-            "version": "v7.3.0",
-                "source": "https://github.com/ramsey/uuid/tree/4.8.1"
+            "source": {
+                "type": "git",
+                "url": "https://github.com/symfony/clock.git",
+                "reference": "somecommitsha"
             },
             "time": "2025-06-01T06:28:46+00:00"
         },

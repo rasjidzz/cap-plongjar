@@ -19,7 +19,7 @@ use App\Models\KelompokKeahlian; // Dibutuhkan untuk Ketua KK
 use App\Models\JabatanStruktural;
 use App\Models\Pic;
 
-class ViewPlotinganPengajaranTest extends TestCase
+class ViewPlotingPengajaranTest extends TestCase
 {
     use RefreshDatabase; // Memastikan database bersih untuk setiap test
     use WithFaker;     // Untuk membuat data dummy
@@ -98,7 +98,7 @@ class ViewPlotinganPengajaranTest extends TestCase
         PlottinganPengajaran::create([
             'id_dosen' => $dosen1->id,
             'id_mapping_kelas_matakuliah' => $mapping1->id,
-            'beban_sks' => 3, 
+            'beban_sks' => 3,
         ]);
 
         $dosenKoordinator = Dosen::factory()->create(['id_kelompok_keahlian' => $kelompokKeahlian->id]);

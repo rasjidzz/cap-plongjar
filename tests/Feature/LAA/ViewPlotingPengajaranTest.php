@@ -20,7 +20,7 @@ use App\Models\JabatanStruktural;
 use App\Models\Pic;
 use Illuminate\Pagination\LengthAwarePaginator; // Import LengthAwarePaginator
 
-class ViewPlotinganPengajaranTest extends TestCase
+class ViewPlotingPengajaranTest extends TestCase
 {
     use RefreshDatabase; // Memastikan database bersih untuk setiap test
     use WithFaker;     // Untuk membuat data dummy

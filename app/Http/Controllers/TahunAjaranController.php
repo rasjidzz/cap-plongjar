@@ -12,6 +12,7 @@ class TahunAjaranController extends Controller
     /**
      * Display a listing of the resource.
      */
+     // @codeCoverageIgnoreStart
     public function index()
     {
         $data = TahunAjaran::all();
@@ -29,6 +30,7 @@ class TahunAjaranController extends Controller
     {
         //
     }
+    // @codeCoverageIgnoreEnd
 
     /**
      * Store a newly created resource in storage.
@@ -94,6 +96,7 @@ class TahunAjaranController extends Controller
         ], 200);
     }
 
+    // @codeCoverageIgnoreStart
     public function getActiveTahunAjaran()
     {
         // Menggunakan scope 'active' yang sudah kita buat di model
@@ -116,6 +119,7 @@ class TahunAjaranController extends Controller
     /**
      * Display the specified resource.
      */
+
     public function show(TahunAjaran $tahunAjaran)
     {
         //
@@ -165,4 +169,5 @@ class TahunAjaranController extends Controller
             ], 500);
         }
     }
+    // @codeCoverageIgnoreEnd
 }

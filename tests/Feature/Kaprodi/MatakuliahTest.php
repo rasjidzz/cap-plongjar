@@ -82,12 +82,7 @@ class MatakuliahTest extends TestCase
 
     }
 
-    /**
-     * Test Case: Memastikan Kaprodi gagal membuat MK dengan data tidak valid.
-     * HTTP Response status code = 422 (Validasi Gagal)
-     *
-     * @return void
-     */
+
     public function test_kaprodi_cannot_create_matakuliah_with_invalid_data(): void
     {
         // 1. Persiapan Data
@@ -103,6 +98,22 @@ class MatakuliahTest extends TestCase
             'matakuliah_eksepsi' => 'ya', 'tingkat_matakuliah' => 'Tingkat 1',
         ]);
         $response1->assertStatus(422)->assertJsonValidationErrors(['nama_matakuliah']);
+    }
+    public function test_kaprodi_cannot_create_matakuliah_server_erorr(): void
+    {
+        // 1. Persiapan Data
+        $programStudiKaprodi = ProgramStudi::factory()->create(['nama' => 'S1 Informatika']);
+        $kaprodiUser = $this->createProgramStudiUser($programStudiKaprodi);
+        $pic = Pic::first();
+
+        // Skenario 1: nama_matakuliah kosong (required)
+        $response1 = $this->actingAs($kaprodiUser, 'sanctum')->postJson('/api/v1/masterdata/matakuliahs', [
+            'nama_matakuliah' => '',
+            'kode_matkul' => 'KODE1', 'sks' => 3, 'praktikum' => false, 'id_pic' => $pic->id,
+            'mandatory_status' => 'wajib_prodi', 'mode_perkuliahan' => 'online',
+            'matakuliah_eksepsi' => 'ya', 'tingkat_matakuliah' => 'Tingkat 1',
+        ]);
+        $response1->assertStatus(500)->assertJsonValidationErrors(['nama_matakuliah']);
     }
 
     public function test_kaprodi_can_view_all_matakuliahs_paginated_successfully(): void
@@ -166,6 +177,53 @@ class MatakuliahTest extends TestCase
 
         // 3. Assertions
         $response->assertStatus(200) // Memastikan status HTTP 200 (Success)
+                 ->assertJson([
+                     'success' => true,
+                     'message' => 'Mata kuliah berhasil diperbarui.',
+                 ]);
+
+    }
+
+    public function test_kaprodi_cannot_update_server_erorr(): void
+    {
+        // 1. Persiapan Data
+        $programStudiKaprodi = ProgramStudi::factory()->create(['nama' => 'S1 Data Sains']);
+        $kaprodiUser = $this->createProgramStudiUser($programStudiKaprodi);
+        $pic = Pic::first();
+
+        // Buat mata kuliah yang akan diupdate
+        $matakuliahToUpdate = Matakuliah::factory()->create([
+            'id_pic' => $pic->id,
+            'nama_matakuliah' => 'Mata Kuliah Lama',
+            'kode_matkul' => 'LAMA1',
+            'sks' => 3,
+            'praktikum' => false,
+            'mandatory_status' => 'pilihan',
+            'mode_perkuliahan' => 'online',
+            'matakuliah_eksepsi' => 'tidak',
+            'tingkat_matakuliah' => 'Tingkat 1',
+            'hour_target' => 48,
+        ]);
+
+        $updatedData = [
+            'nama_matakuliah' => 'Mata Kuliah Baru',
+            'kode_matkul' => 'BARU2', // Kode unik baru
+            'sks' => 4, // SKS diubah
+            'praktikum' => true, // Praktikum diubah
+            'id_pic' => $pic->id,
+            'mandatory_status' => 'wajib_prodi',
+            'mode_perkuliahan' => 'hybrid',
+            'matakuliah_eksepsi' => 'ya',
+            'tingkat_matakuliah' => 'Tingkat 2',
+            // hour_target akan dihitung ulang oleh controller
+        ];
+
+        // 2. Aksi: Login sebagai Kaprodi dan kirim PUT request untuk update mata kuliah
+        // Endpoint: /api/v1/masterdata/matakuliahs/{matakuliah}
+        $response = $this->actingAs($kaprodiUser, 'sanctum')->putJson('/api/v1/masterdata/matakuliahs/' . $matakuliahToUpdate->id, $updatedData);
+
+        // 3. Assertions
+        $response->assertStatus(500) // Memastikan status HTTP 200 (Success)
                  ->assertJson([
                      'success' => true,
                      'message' => 'Mata kuliah berhasil diperbarui.',
@@ -252,6 +310,54 @@ class MatakuliahTest extends TestCase
 
         // 3. Assertions
         $response->assertStatus(422) // Memastikan status HTTP 422
+                 ->assertJson([
+                     'success' => false,
+                     'message' => 'Incorrect Password, action denied',
+                     'errors' => [
+                         'password' => ['Incorrect Password']
+                     ]
+                 ]);
+
+        // Verifikasi database: memastikan mata kuliah TIDAK dihapus
+        $this->assertDatabaseHas('matakuliahs', [
+            'id' => $matakuliahToDelete->id,
+            'deleted_at' => null, // Masih belum terhapus
+        ]);
+    }
+
+    public function test_kaprodi_cannot_soft_delete_matakuliah_server_erorr(): void
+    {
+        // 1. Persiapan Data
+        $programStudiKaprodi = ProgramStudi::factory()->create(['nama' => 'S1 Teknik Fisika']);
+        $kaprodiUser = $this->createProgramStudiUser($programStudiKaprodi); // Password user ini adalah 'password'
+        $pic = Pic::first();
+
+        $matakuliahToDelete = Matakuliah::factory()->create([
+            'id_pic' => $pic->id,
+            'nama_matakuliah' => 'Mata Kuliah Tidak Dihapus',
+            'kode_matkul' => 'NODEL1',
+            'sks' => 3,
+            'praktikum' => false,
+            'mandatory_status' => 'pilihan',
+            'mode_perkuliahan' => 'online',
+            'matakuliah_eksepsi' => 'tidak',
+            'tingkat_matakuliah' => 'Tingkat 1',
+            'hour_target' => 48,
+        ]);
+
+        // Pastikan mata kuliah ada di database dan belum terhapus
+        $this->assertDatabaseHas('matakuliahs', [
+            'id' => $matakuliahToDelete->id,
+            'deleted_at' => null,
+        ]);
+
+        // 2. Aksi: Login sebagai Kaprodi dan kirim DELETE request dengan password salah
+        $response = $this->actingAs($kaprodiUser, 'sanctum')->deleteJson('/api/v1/masterdata/matakuliahs/' . $matakuliahToDelete->id, [
+            'password' => 'wrong-password', // Password salah
+        ]);
+
+        // 3. Assertions
+        $response->assertStatus(500) // Memastikan status HTTP 422
                  ->assertJson([
                      'success' => false,
                      'message' => 'Incorrect Password, action denied',

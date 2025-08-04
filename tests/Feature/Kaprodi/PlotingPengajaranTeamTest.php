@@ -19,7 +19,7 @@ use App\Models\JabatanStruktural;
 use App\Models\Pic;
 use Illuminate\Support\Facades\Log;
 
-class PlottinganPengajaranTeamTest extends TestCase
+class PlotingPengajaranTeamTest extends TestCase
 {
     use RefreshDatabase;
     use WithFaker;

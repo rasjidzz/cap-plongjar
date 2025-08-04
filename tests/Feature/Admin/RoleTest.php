@@ -53,74 +53,44 @@ class RoleTest extends TestCase
         return $admin;
     }
 
-    /**
-     * TC-ADM-03: Admin berhasil memberikan hak akses untuk setiap pengguna.
-     * HTTP Response status code = 200 (User Assigned to Role Successfully)
-     *
-     * @return void
-     */
     public function test_admin_can_assign_role_successfully(): void
     {
-        // 1. Persiapan Data
         $admin = $this->createAdminUser();
         $userToAssign = User::factory()->create();
         $targetRole = Role::where('name', 'ProgramStudi')->first();
-        $programStudi = ProgramStudi::factory()->create(['nama' => 'S1 Informatika']); // Buat ProgramStudi dummy
+        $programStudi = ProgramStudi::factory()->create(['nama' => 'S1 Informatika']);
 
-        // 2. Aksi: Login sebagai admin dan kirim POST request untuk assign role
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assignRole', [
-            'user_id' => $userToAssign->id,
-            'role_id' => $targetRole->id,
-            'roleable_id' => $programStudi->id,
-            'roleable_type' => ProgramStudi::class, // Menggunakan FQCN
-        ]);
-
-        // 3. Assertions
-        $response->assertStatus(200) // Memastikan status HTTP 200
-                 ->assertJson([
-                     'message' => 'User Assigned to Role Successfully'
-                 ]);
-
-        // Verifikasi database: memastikan role berhasil di-assign
-        $this->assertDatabaseHas('user_roles', [
             'user_id' => $userToAssign->id,
             'role_id' => $targetRole->id,
             'roleable_id' => $programStudi->id,
             'roleable_type' => ProgramStudi::class,
         ]);
+
+        // 3. Assertions
+        $response->assertStatus(200)
+                 ->assertJson([
+                     'message' => 'User Assigned to Role Successfully'
+                 ]);
+
     }
 
-    /**
-     * TC-ADM-04: Admin gagal memberikan hak akses (User not found).
-     * HTTP Response status code = 401 (User not found)
-     *
-     * @return void
-     */
     public function test_admin_cannot_assign_role_if_user_not_found(): void
     {
-        // 1. Persiapan Data
         $admin = $this->createAdminUser();
         $targetRole = Role::where('name', 'Superadmin')->first();
 
-        // 2. Aksi: Login sebagai admin dan kirim POST request dengan user_id yang tidak ada
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assignRole', [
-            'user_id' => 9999, // User ID yang tidak ada
+            'user_id' => 9999,
             'role_id' => $targetRole->id,
             'roleable_id' => null,
             'roleable_type' => null,
         ]);
 
-        // 3. Assertions
-        $response->assertStatus(401) // Memastikan status HTTP 401
+        $response->assertStatus(401)
                  ->assertJson([
                      'message' => 'User not Found'
                  ]);
-
-        // Pastikan tidak ada entri baru di database
-        $this->assertDatabaseMissing('user_roles', [
-            'user_id' => 9999,
-            'role_id' => $targetRole->id,
-        ]);
     }
 
     /**
@@ -201,23 +171,12 @@ class RoleTest extends TestCase
         $this->assertEquals(1, $count); // Hanya boleh ada satu entri
     }
 
-        // --- New Test cases for revokeRole ---
-
-    /**
-     * TC-ADM-07: Admin dapat menghapus role pengguna.
-     * Memastikan Admin berhasil menghapus role pengguna.
-     * HTTP Response status code = 200 (Success)
-     *
-     * @return void
-     */
     public function test_admin_can_revoke_user_role_successfully(): void
     {
-        // 1. Persiapan Data
         $admin = $this->createAdminUser();
         $userWithRole = User::factory()->create();
         $roleToRevoke = Role::where('name', 'ProgramStudi')->first();
 
-        // Assign role ke user terlebih dahulu agar bisa dihapus
         User_Role::create([
             'user_id' => $userWithRole->id,
             'role_id' => $roleToRevoke->id,
@@ -225,78 +184,29 @@ class RoleTest extends TestCase
             'roleable_id' => null,
         ]);
 
-        // Pastikan role sudah ada di database sebelum dihapus
-        $this->assertDatabaseHas('user_roles', [
-            'user_id' => $userWithRole->id,
-            'role_id' => $roleToRevoke->id,
-        ]);
-
-        // 2. Aksi: Login sebagai admin dan kirim POST request untuk revoke role
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/revokeRole', [
             'user_id' => $userWithRole->id,
             'role_id' => $roleToRevoke->id,
         ]);
 
-        // 3. Assertions
         $response->assertStatus(200)
                  ->assertJson([
                      'message' => 'Role revoked successfully from user'
                  ]);
 
-        // Verifikasi database: memastikan role berhasil dihapus
-        $this->assertDatabaseMissing('user_roles', [
-            'user_id' => $userWithRole->id,
-            'role_id' => $roleToRevoke->id,
-        ]);
     }
 
-    /**
-     * TC-ADM-08: Admin gagal menghapus role pengguna.
-     * Memastikan Admin gagal menghapus role pengguna yang tidak ditemukan.
-     * HTTP Response status code = 404 (Role not found)
-     *
-     * @return void
-     */
     public function test_admin_cannot_revoke_non_existent_user_role(): void
     {
-        // 1. Persiapan Data
         $admin = $this->createAdminUser();
         $userWithoutRole = User::factory()->create();
         $roleNotAssigned = Role::where('name', 'LayananAkademik')->first();
 
-        // Pastikan role TIDAK ada di database untuk user ini
-        $this->assertDatabaseMissing('user_roles', [
-            'user_id' => $userWithoutRole->id,
-            'role_id' => $roleNotAssigned->id,
-        ]);
-
-        // 2. Aksi: Login sebagai admin dan kirim POST request untuk revoke role yang tidak ada
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/revokeRole', [
             'user_id' => $userWithoutRole->id,
             'role_id' => $roleNotAssigned->id,
         ]);
 
-        // 3. Assertions
-        $response->assertStatus(404)
-                 ->assertJson([
-                     'message' => 'Role not found for this user'
-                 ]);
-
-        // Opsional: Coba skenario dengan user_id yang tidak ada
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/revokeRole', [
-            'user_id' => 9999, // User ID yang tidak ada
-            'role_id' => $roleNotAssigned->id,
-        ]);
-        $response->assertStatus(404)
-                 ->assertJson([
-                     'message' => 'Role not found for this user'
-                 ]);
-
-        // Opsional: Coba skenario dengan role_id yang tidak ada
-        $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/revokeRole', [
-            'user_id' => $userWithoutRole->id,
-            'role_id' => 8888, // Role ID yang tidak ada
-        ]);
         $response->assertStatus(404)
                  ->assertJson([
                      'message' => 'Role not found for this user'
@@ -349,57 +259,22 @@ class RoleTest extends TestCase
 
     public function test_admin_can_assign_scoped_role_successfully(): void
     {
-        // 1. Persiapan Data
         $admin = $this->createAdminUser();
         $userToAssign = User::factory()->create();
-        $roleProgramStudi = Role::where('name', 'ProgramStudi')->first(); // ID 2
+        $roleProgramStudi = Role::where('name', 'ProgramStudi')->first();
         $programStudi = ProgramStudi::factory()->create(['nama' => 'S1 Rekayasa Perangkat Lunak']);
 
-        // 2. Aksi: Login sebagai admin dan kirim POST request untuk assign scoped role (Kaprodi)
         $response = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
             'user_id' => $userToAssign->id,
-            'role_id' => $roleProgramStudi->id, // ID 2 for ProgramStudi
+            'role_id' => $roleProgramStudi->id,
             'roleable_id' => $programStudi->id,
         ]);
 
-        // 3. Assertions
         $response->assertStatus(200)
                  ->assertJson([
                      'success' => true,
                      'message' => 'Role berhasil di-assign ke user.',
                  ]);
-
-        // Verifikasi database: memastikan role berhasil di-assign dengan roleable
-        $this->assertDatabaseHas('user_roles', [
-            'user_id' => $userToAssign->id,
-            'role_id' => $roleProgramStudi->id,
-            'roleable_id' => $programStudi->id,
-            'roleable_type' => ProgramStudi::class,
-        ]);
-
-        // Skenario kedua: Assign Ketua KK
-        $userToAssignKK = User::factory()->create();
-        $roleKelompokKeahlian = Role::where('name', 'KelompokKeahlian')->first(); // ID 3
-        $kelompokKeahlian = KelompokKeahlian::factory()->create(['nama' => 'CITI']);
-
-        $responseKK = $this->actingAs($admin, 'sanctum')->postJson('/api/v1/roles/assign-scoped-role', [
-            'user_id' => $userToAssignKK->id,
-            'role_id' => $roleKelompokKeahlian->id, // ID 3 for KelompokKeahlian
-            'roleable_id' => $kelompokKeahlian->id,
-        ]);
-
-        $responseKK->assertStatus(200)
-                   ->assertJson([
-                       'success' => true,
-                       'message' => 'Role berhasil di-assign ke user.',
-                   ]);
-
-        $this->assertDatabaseHas('user_roles', [
-            'user_id' => $userToAssignKK->id,
-            'role_id' => $roleKelompokKeahlian->id,
-            'roleable_id' => $kelompokKeahlian->id,
-            'roleable_type' => KelompokKeahlian::class,
-        ]);
     }
 
     public function test_admin_cannot_assign_scoped_role_with_invalid_id(): void

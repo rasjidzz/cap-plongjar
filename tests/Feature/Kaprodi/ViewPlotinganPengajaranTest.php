@@ -18,7 +18,7 @@ use App\Models\KoordinatorMatakuliah; // Import model KoordinatorMatakuliah
 use App\Models\KelompokKeahlian; // Dibutuhkan oleh DosenFactory
 use App\Models\Pic; // Dibutuhkan oleh MatakuliahFactory
 
-class PlottinganPengajaranTest extends TestCase
+class ViewPlotinganPengajaranTest extends TestCase
 {
     use RefreshDatabase;
     use WithFaker;
