@@ -27,7 +27,6 @@ class HasilPlottinganExport implements FromQuery, WithHeadings, WithMapping, Sho
      */
     public function query()
     {
-        // Menggunakan query yang sama persis dengan fungsi getHasil... Anda
         return PlottinganPengajaran::query()->with([
             'dosen:id,name,lecturer_code',
             'mappingKelasMatakuliah' => function ($query) {
@@ -82,7 +81,6 @@ class HasilPlottinganExport implements FromQuery, WithHeadings, WithMapping, Sho
      */
     public function map($plot): array
     {
-        // Memetakan data dari model ke array sesuai urutan headings
         $mkm = $plot->mappingKelasMatakuliah;
         $matakuliah = $mkm ? $mkm->matakuliah : null;
         $dosenPengajar = $plot->dosen;

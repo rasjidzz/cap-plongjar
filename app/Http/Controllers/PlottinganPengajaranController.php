@@ -624,22 +624,46 @@ class PlottinganPengajaranController extends Controller
         ]);
     }
 
+    // public function exportHasilPlottinganByProdiDanTahunAjaranToExcel($id_tahun_ajaran, $id_program_studi)
+    // {
+    //     $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
+    //     $programStudi = ProgramStudi::find($id_program_studi);
+
+    //     if (!$tahunAjaran || !$programStudi) {
+    //         abort(404, 'Tahun ajaran atau program studi tidak ditemukan.');
+    //     }
+
+    //     $fileName = 'hasil_plottingan_prodi_'
+    //         . str_replace('', '_', $programStudi->nama) . '_'
+    //         . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_'
+    //         . $tahunAjaran->semester . '.xlsx';
+
+    //     return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
+    // }
     public function exportHasilPlottinganByProdiDanTahunAjaranToExcel($id_tahun_ajaran, $id_program_studi)
     {
-        $tahunAjaran = TahunAjaran::find($id_tahun_ajaran);
-        $programStudi = ProgramStudi::find($id_program_studi);
+        try {
+            $tahunAjaran = TahunAjaran::findOrFail($id_tahun_ajaran);
+            $programStudi = ProgramStudi::findOrFail($id_program_studi);
 
-        if (!$tahunAjaran || !$programStudi) {
-            abort(404, 'Tahun ajaran atau program studi tidak ditemukan.');
+            $fileName = 'hasil_plottingan_prodi_'
+                . str_replace(' ', '_', $programStudi->nama) . '_'
+                . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_'
+                . $tahunAjaran->semester . '.xlsx';
+
+            return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            abort(404, 'Data tahun ajaran atau program studi tidak ditemukan.');
+        } catch (\Exception $e) {
+            Log::error('Gagal mengekspor plottingan: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            abort(response()->json([
+                'success' => false,
+                'message' => 'Gagal mengekspor data karena terjadi kesalahan pada server. Silakan hubungi administrator.'
+            ], 500));
         }
-
-        $fileName = 'hasil_plottingan_prodi_'
-            . str_replace('', '_', $programStudi->nama) . '_'
-            . str_replace('/', '-', $tahunAjaran->tahun_ajaran) . '_'
-            . $tahunAjaran->semester . '.xlsx';
-        // . str_replace(' ', '_', $programStudi->nama) . '.xlsx';
-
-        return Excel::download(new HasilPlottinganExport((int)$id_tahun_ajaran, (int)$id_program_studi), $fileName);
     }
 
     public function unassignPlottingan(PlottinganPengajaran $plottinganPengajaran)
