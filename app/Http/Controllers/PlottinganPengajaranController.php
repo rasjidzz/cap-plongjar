@@ -659,10 +659,10 @@ class PlottinganPengajaranController extends Controller
                 'trace' => $e->getTraceAsString()
             ]);
 
-            abort(response()->json([
+            return response()->json([
                 'success' => false,
                 'message' => 'Gagal mengekspor data karena terjadi kesalahan pada server. Silakan hubungi administrator.'
-            ], 500));
+            ], 500);
         }
     }
 
