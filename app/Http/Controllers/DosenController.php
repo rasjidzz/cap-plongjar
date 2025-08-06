@@ -799,7 +799,7 @@ class DosenController extends Controller
         }
 
         $dosen = Dosen::with([
-            'jabatanStruktural:id,nama',
+            'jabatanStruktural:id,nama,konversi_sks',
             'programStudi:id,nama'
         ])
             ->find($id_dosen);
