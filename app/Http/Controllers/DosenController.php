@@ -887,6 +887,17 @@ class DosenController extends Controller
      */
     public function destroy(Dosen $dosen)
     {
-        //
+        try {
+            $dosen->delete();
+            return response()->json([
+                'success' => true,
+                'message' => 'Dosen berhasil dihapus (soft delete).'
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Gagal menghapus mata kuliah karena terjadi kesalahan pada server.'
+            ], 500);
+        }
     }
 }
