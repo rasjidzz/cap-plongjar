@@ -12,6 +12,7 @@ use App\Http\Controllers\PlottinganPengajaranController;
 use App\Http\Controllers\ProgramStudiController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TahunAjaranController;
+use App\Models\PlottinganPengajaran;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -165,6 +166,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/dosen/{id_dosen}/beban-sks-aktif', [DosenController::class, 'getBebanSksDosenByIdDosenandActiveTahunAjaran']);
             Route::get('/dosen/{id_dosen}/tahun-ajaran/{id_tahun_ajaran}', [DosenController::class, 'getBebanSksDosenByIdDosenandIdTahunAjaran']);
         });
+        Route::get('/progress/program-studi/{id_program_studi}/by-auth-kk', [PlottinganPengajaranController::class, 'getProgressPlottingPerProdiAndActiveTahunAjaranAndAuthKK'])->middleware(['auth:sanctum', 'role:KelompokKeahlian']);
+        Route::get('/progress/by-auth-prodi', [PlottinganPengajaranController::class, 'getProgressPlottingActiveTahunAjaranAndAuthProdi'])->middleware(['auth:sanctum', 'role:ProgramStudi']);
         Route::middleware(['auth:sanctum', 'role:Superadmin,LayananAkademik,KepalaUrusanLab,ProgramStudi,KelompokKeahlian'])->group(function () {
             Route::get('/tahun-ajaran/{id_tahun_ajaran}/program-studi/{id_program_studi}', [PlottinganPengajaranController::class, 'getHasilPlottinganByProdiDanTahunAjaran']);
             Route::get('/summary', [PlottinganPengajaranController::class, 'getPlottinganSummary']);

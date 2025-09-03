@@ -15,6 +15,7 @@ use App\Models\ProgramStudi;
 use App\Models\TahunAjaran;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\PlottinganPengajaranExport;
+use App\Models\Pic;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Pagination\Paginator;
@@ -791,6 +792,432 @@ class PlottinganPengajaranController extends Controller
             'data' => $summaries
         ]);
     }
+    public function getProgressPlottingPerProdiAndActiveTahunAjaranAndAuthKK(Request $request, $id_program_studi) // Untuk digunakan oleh Role Kelompok Keahlian
+    {
+        // 1. Validasi dan dapatkan konteks
+        $tahunAjaranAktif = TahunAjaran::where('status', true)->first();
+        if (!$tahunAjaranAktif) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada tahun ajaran yang sedang aktif.'], 404);
+        }
+
+        $programStudi = ProgramStudi::find($id_program_studi);
+        if (!$programStudi) {
+            return response()->json(['success' => false, 'message' => 'Program Studi tidak ditemukan.'], 404);
+        }
+
+        // Dapatkan Kelompok Keahlian dari user yang login untuk filter PIC
+        $user = $request->user();
+        $user->loadMissing('roles');
+        $userKkName = null;
+
+        foreach ($user->roles as $role) {
+            if ($role->name === 'KelompokKeahlian' && isset($role->pivot->roleable_id)) {
+                $kk = KelompokKeahlian::find($role->pivot->roleable_id);
+                if ($kk) {
+                    $userKkName = $kk->nama;
+                    break;
+                }
+            }
+        }
+
+        if (is_null($userKkName)) {
+            return response()->json(['success' => false, 'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Kelompok Keahlian manapun.'], 403);
+        }
+
+        // Cari PIC yang namanya sama dengan nama Kelompok Keahlian user
+        $pic = Pic::where('name', $userKkName)->first();
+        if (!$pic) {
+            // Jika tidak ada PIC yang cocok, berarti tidak ada matakuliah yang bisa ditampilkan
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada mata kuliah yang ditemukan untuk Kelompok Keahlian Anda.',
+                'data' => [ /* ... struktur data kosong ... */]
+            ]);
+        }
+        $picId = $pic->id;
+
+        // 2. Ambil semua mapping kelas yang relevan dengan filter tambahan per PIC
+        $allMappings = MappingKelasMatakuliah::with(['matakuliah', 'plottinganPengajarans'])
+            ->where('id_program_studi', $id_program_studi)
+            ->where('id_tahun_ajaran', $tahunAjaranAktif->id)
+            ->whereHas('matakuliah', function ($query) use ($picId) {
+                $query->where('id_pic', $picId);
+            })
+            ->get();
+
+        // // 2. Ambil semua mapping kelas yang relevan
+        // $allMappings = MappingKelasMatakuliah::with(['matakuliah', 'plottinganPengajarans'])
+        //     ->where('id_program_studi', $id_program_studi)
+        //     ->where('id_tahun_ajaran', $tahunAjaranAktif->id)
+        //     ->get();
+
+        if ($allMappings->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada kelas mata kuliah yang dibuka untuk program studi ini pada tahun ajaran aktif.',
+                'data' => [
+                    'status_keseluruhan' => 'Tidak Ada Kelas',
+                    'total_matakuliah' => 0,
+                    'detail_progress' => [
+                        'selesai_diplotting' => [],
+                        'sedang_diplotting' => [],
+                        'belum_diplotting' => [],
+                    ]
+                ]
+            ]);
+        }
+
+        // 3. Kelompokkan mapping berdasarkan mata kuliah
+        $mappingsByMatakuliah = $allMappings->groupBy('matakuliah.id');
+
+        $selesai = [];
+        $sedang = [];
+        $belum = [];
+
+        // 4. Iterasi setiap mata kuliah untuk menentukan statusnya
+        foreach ($mappingsByMatakuliah as $matakuliahId => $mappingsForThisMatakuliah) {
+            $totalKelas = $mappingsForThisMatakuliah->count();
+            $jumlahKelasSelesai = 0;
+            $jumlahKelasBelum = 0;
+
+            $firstMapping = $mappingsForThisMatakuliah->first();
+            $namaMatakuliah = $firstMapping->matakuliah->nama_matakuliah;
+
+            foreach ($mappingsForThisMatakuliah as $mapping) {
+                $totalBebanSksTerplot = $mapping->plottinganPengajarans->sum('beban_sks');
+                $sksMatakuliah = $mapping->matakuliah->sks;
+
+                if ($totalBebanSksTerplot == 0) {
+                    $jumlahKelasBelum++;
+                } elseif ($totalBebanSksTerplot >= $sksMatakuliah) {
+                    $jumlahKelasSelesai++;
+                }
+            }
+
+            $summaryDetail = [
+                'nama_matakuliah' => $namaMatakuliah,
+                'total_kelas' => $totalKelas,
+                'kelas_selesai_diplot' => $jumlahKelasSelesai,
+                'progress_text' => "{$jumlahKelasSelesai} dari {$totalKelas} kelas telah selesai diplot."
+            ];
+
+            if ($jumlahKelasSelesai === $totalKelas) {
+                $selesai[] = $summaryDetail;
+            } elseif ($jumlahKelasBelum === $totalKelas) {
+                $belum[] = $summaryDetail;
+            } else {
+                $sedang[] = $summaryDetail;
+            }
+        }
+
+        // 5. Tentukan status keseluruhan dan hitung persentase
+        $totalMatakuliah = $mappingsByMatakuliah->count();
+        $jumlahSelesai = count($selesai);
+        $jumlahSedang = count($sedang);
+        $jumlahBelum = count($belum);
+
+        $statusKeseluruhan = 'Sedang Diplotting';
+        if ($jumlahSelesai === $totalMatakuliah) {
+            $statusKeseluruhan = 'Selesai Diplotting';
+        } elseif ($jumlahBelum === $totalMatakuliah) {
+            $statusKeseluruhan = 'Belum Diplotting';
+        }
+
+        $persentaseSelesai = round(($jumlahSelesai / $totalMatakuliah) * 100, 2);
+        $persentaseSedang = round(($jumlahSedang / $totalMatakuliah) * 100, 2);
+        $persentaseBelum = round(($jumlahBelum / $totalMatakuliah) * 100, 2);
+
+        // 6. Siapkan respons akhir
+        return response()->json([
+            'success' => true,
+            'message' => 'Progress plottingan berhasil dimuat.',
+            'data' => [
+                'info' => [
+                    'program_studi' => $programStudi->nama,
+                    'tahun_ajaran' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+                ],
+                'status_keseluruhan' => $statusKeseluruhan,
+                'total_matakuliah' => $totalMatakuliah,
+                'jumlah_selesai' => $jumlahSelesai,
+                'jumlah_sedang' => $jumlahSedang,
+                'jumlah_belum' => $jumlahBelum,
+                'persentase_selesai' => $persentaseSelesai,
+                'persentase_sedang' => $persentaseSedang,
+                'persentase_belum' => $persentaseBelum,
+                'detail_progress' => [
+                    'selesai_diplotting' => $selesai,
+                    'sedang_diplotting' => $sedang,
+                    'belum_diplotting' => $belum,
+                ]
+            ]
+        ]);
+    }
+    public function getProgressPlottingActiveTahunAjaranAndAuthProdi(Request $request) // Untuk digunakan oleh Role Program Studi
+    {
+        // 1. Validasi dan dapatkan konteks
+        $tahunAjaranAktif = TahunAjaran::where('status', true)->first();
+        if (!$tahunAjaranAktif) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada tahun ajaran yang sedang aktif.'], 404);
+        }
+
+        $user = $request->user();
+        $user->loadMissing('roles');
+        $userProdiName = null;
+
+        foreach ($user->roles as $role) {
+            if ($role->name === 'ProgramStudi' && isset($role->pivot->roleable_id)) {
+                $prodi = ProgramStudi::find($role->pivot->roleable_id);
+                if ($prodi) {
+                    $userProdiName = $prodi->nama;
+                    break;
+                }
+            }
+        }
+
+        $programStudi = ProgramStudi::find($prodi->id);
+        if (!$programStudi) {
+            return response()->json(['success' => false, 'message' => 'Program Studi tidak ditemukan.'], 404);
+        }
+
+        // return response()->json(['success' => true, 'prodi' => $prodi]);
+
+        if (is_null($userProdiName)) {
+            return response()->json(['success' => false, 'message' => 'Otorisasi gagal: Anda tidak ter-assign ke Program Studi manapun.'], 403);
+        }
+
+        $pic = Pic::where('name', $userProdiName)->first();
+        // return response()->json(['success' => true, 'data' => $pic]);
+        if (!$pic) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada mata kuliah yang ditemukan untuk Kelompok Keahlian Anda.',
+                'data' => []
+            ]);
+        }
+        $picId = $pic->id;
+
+        // return response()->json(['success' => true, 'data' => [$tahunAjaranAktif, $user, $pic, $prodi]]);
+
+        // 2. Ambil semua mapping kelas yang relevan dengan filter tambahan per PIC
+        $allMappings = MappingKelasMatakuliah::with(['matakuliah', 'plottinganPengajarans'])
+            ->where('id_program_studi', $prodi->id)
+            ->where('id_tahun_ajaran', $tahunAjaranAktif->id)
+            ->whereHas('matakuliah', function ($query) use ($picId) {
+                $query->where('id_pic', $picId);
+            })
+            ->get();
+
+
+        if ($allMappings->isEmpty()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Tidak ada kelas mata kuliah yang dibuka untuk program studi ini pada tahun ajaran aktif.',
+                'data' => [
+                    'status_keseluruhan' => 'Tidak Ada Kelas',
+                    'total_matakuliah' => 0,
+                    'detail_progress' => [
+                        'selesai_diplotting' => [],
+                        'sedang_diplotting' => [],
+                        'belum_diplotting' => [],
+                    ]
+                ]
+            ]);
+        }
+
+        // 3. Kelompokkan mapping berdasarkan mata kuliah
+        $mappingsByMatakuliah = $allMappings->groupBy('matakuliah.id');
+
+        $selesai = [];
+        $sedang = [];
+        $belum = [];
+
+        // 4. Iterasi setiap mata kuliah untuk menentukan statusnya
+        foreach ($mappingsByMatakuliah as $matakuliahId => $mappingsForThisMatakuliah) {
+            $totalKelas = $mappingsForThisMatakuliah->count();
+            $jumlahKelasSelesai = 0;
+            $jumlahKelasBelum = 0;
+
+            $firstMapping = $mappingsForThisMatakuliah->first();
+            $namaMatakuliah = $firstMapping->matakuliah->nama_matakuliah;
+
+            foreach ($mappingsForThisMatakuliah as $mapping) {
+                $totalBebanSksTerplot = $mapping->plottinganPengajarans->sum('beban_sks');
+                $sksMatakuliah = $mapping->matakuliah->sks;
+
+                if ($totalBebanSksTerplot == 0) {
+                    $jumlahKelasBelum++;
+                } elseif ($totalBebanSksTerplot >= $sksMatakuliah) {
+                    $jumlahKelasSelesai++;
+                }
+            }
+
+            $summaryDetail = [
+                'nama_matakuliah' => $namaMatakuliah,
+                'total_kelas' => $totalKelas,
+                'kelas_selesai_diplot' => $jumlahKelasSelesai,
+                'progress_text' => "{$jumlahKelasSelesai} dari {$totalKelas} kelas telah selesai diplot."
+            ];
+
+            if ($jumlahKelasSelesai === $totalKelas) {
+                $selesai[] = $summaryDetail;
+            } elseif ($jumlahKelasBelum === $totalKelas) {
+                $belum[] = $summaryDetail;
+            } else {
+                $sedang[] = $summaryDetail;
+            }
+        }
+
+        // 5. Tentukan status keseluruhan dan hitung persentase
+        $totalMatakuliah = $mappingsByMatakuliah->count();
+        $jumlahSelesai = count($selesai);
+        $jumlahSedang = count($sedang);
+        $jumlahBelum = count($belum);
+
+        $statusKeseluruhan = 'Sedang Diplotting';
+        if ($jumlahSelesai === $totalMatakuliah) {
+            $statusKeseluruhan = 'Selesai Diplotting';
+        } elseif ($jumlahBelum === $totalMatakuliah) {
+            $statusKeseluruhan = 'Belum Diplotting';
+        }
+
+        $persentaseSelesai = round(($jumlahSelesai / $totalMatakuliah) * 100, 2);
+        $persentaseSedang = round(($jumlahSedang / $totalMatakuliah) * 100, 2);
+        $persentaseBelum = round(($jumlahBelum / $totalMatakuliah) * 100, 2);
+
+        // 6. Siapkan respons akhir
+        return response()->json([
+            'success' => true,
+            'message' => 'Progress plottingan berhasil dimuat.',
+            'data' => [
+                'info' => [
+                    'program_studi' => $programStudi->nama,
+                    'tahun_ajaran' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+                ],
+                'status_keseluruhan' => $statusKeseluruhan,
+                'total_matakuliah' => $totalMatakuliah,
+                'jumlah_selesai' => $jumlahSelesai,
+                'jumlah_sedang' => $jumlahSedang,
+                'jumlah_belum' => $jumlahBelum,
+                'persentase_selesai' => $persentaseSelesai,
+                'persentase_sedang' => $persentaseSedang,
+                'persentase_belum' => $persentaseBelum,
+                'detail_progress' => [
+                    'selesai_diplotting' => $selesai,
+                    'sedang_diplotting' => $sedang,
+                    'belum_diplotting' => $belum,
+                ]
+            ]
+        ]);
+    }
+    // public function getProgressPlottingPerProdiAndActiveTahunAjaran($id_program_studi)
+    // {
+    //     $tahunAjaranAktif = TahunAjaran::where('status', true)->first();
+    //     if (!$tahunAjaranAktif) {
+    //         return response()->json(['success' => false, 'message' => 'Tidak ada tahun ajaran yang sedang aktif.'], 404);
+    //     }
+
+    //     $programStudi = ProgramStudi::find($id_program_studi);
+    //     if (!$programStudi) {
+    //         return response()->json(['success' => false, 'message' => 'Program Studi tidak ditemukan.'], 404);
+    //     }
+
+    //     $allMappings = MappingKelasMatakuliah::with(['matakuliah', 'plottinganPengajarans'])
+    //         ->where('id_program_studi', $id_program_studi)
+    //         ->where('id_tahun_ajaran', $tahunAjaranAktif->id)
+    //         ->get();
+
+    //     if ($allMappings->isEmpty()) {
+    //         return response()->json([
+    //             'success' => true,
+    //             'message' => 'Tidak ada kelas mata kuliah yang dibuka untuk program studi ini pada tahun ajaran aktif.',
+    //             'data' => [
+    //                 'status_keseluruhan' => 'Tidak Ada Kelas',
+    //                 'total_kelas' => 0,
+    //                 'detail_progress' => [
+    //                     'selesai_diplotting' => (object)[],
+    //                     'sedang_diplotting' => (object)[],
+    //                     'belum_diplotting' => (object)[],
+    //                 ]
+    //             ]
+    //         ]);
+    //     }
+
+    //     $selesai = [];
+    //     $sedang = [];
+    //     $belum = [];
+    //     $jumlahSelesai = 0;
+    //     $jumlahSedang = 0;
+    //     $jumlahBelum = 0;
+
+    //     foreach ($allMappings as $mapping) {
+    //         $totalBebanSksTerplot = $mapping->plottinganPengajarans->sum('beban_sks');
+    //         $sksMatakuliah = $mapping->matakuliah->sks;
+    //         $namaMatakuliah = $mapping->matakuliah->nama_matakuliah;
+
+    //         $detailKelas = [
+    //             'id_mapping_kelas' => $mapping->id,
+    //             'nama_kelas' => $mapping->nama_kelas,
+    //             'sks_matakuliah' => $sksMatakuliah,
+    //             'sks_terplot' => $totalBebanSksTerplot,
+    //         ];
+
+    //         if ($totalBebanSksTerplot == 0) {
+    //             $belum[$namaMatakuliah][] = $detailKelas;
+    //             $jumlahBelum++;
+    //         } elseif ($totalBebanSksTerplot >= $sksMatakuliah) {
+    //             $selesai[$namaMatakuliah][] = $detailKelas;
+    //             $jumlahSelesai++;
+    //         } else {
+    //             $sedang[$namaMatakuliah][] = $detailKelas;
+    //             $jumlahSedang++;
+    //         }
+    //     }
+
+    //     // 5. Tentukan status keseluruhan dan hitung persentase
+    //     $totalKelas = $allMappings->count();
+    //     $statusKeseluruhan = 'Sedang Diplotting';
+
+    //     $persentaseSelesai = 0;
+    //     $persentaseSedang = 0;
+    //     $persentaseBelum = 0;
+
+    //     if ($totalKelas > 0) { // Hindari pembagian dengan nol
+    //         $persentaseSelesai = round(($jumlahSelesai / $totalKelas) * 100, 2);
+    //         $persentaseSedang = round(($jumlahSedang / $totalKelas) * 100, 2);
+    //         $persentaseBelum = round(($jumlahBelum / $totalKelas) * 100, 2);
+    //     }
+
+    //     if ($jumlahSelesai === $totalKelas) {
+    //         $statusKeseluruhan = 'Selesai Diplotting';
+    //     } elseif ($jumlahBelum === $totalKelas) {
+    //         $statusKeseluruhan = 'Belum Diplotting';
+    //     }
+
+    //     // 6. Siapkan respons akhir
+    //     return response()->json([
+    //         'success' => true,
+    //         'message' => 'Progress plottingan berhasil dimuat.',
+    //         'data' => [
+    //             'info' => [
+    //                 'program_studi' => $programStudi->name,
+    //                 'tahun_ajaran' => $tahunAjaranAktif->tahun_ajaran . ' - ' . $tahunAjaranAktif->semester,
+    //             ],
+    //             'status_keseluruhan' => $statusKeseluruhan,
+    //             'total_kelas' => $totalKelas,
+    //             'jumlah_selesai' => $jumlahSelesai,
+    //             'jumlah_sedang' => $jumlahSedang,
+    //             'jumlah_belum' => $jumlahBelum,
+    //             'persentase_selesai' => $persentaseSelesai,
+    //             'persentase_sedang' => $persentaseSedang,
+    //             'persentase_belum' => $persentaseBelum,
+    //             'detail_progress' => [
+    //                 'selesai_diplotting' => !empty($selesai) ? $selesai : (object)[],
+    //                 'sedang_diplotting' => !empty($sedang) ? $sedang : (object)[],
+    //                 'belum_diplotting' => !empty($belum) ? $belum : (object)[],
+    //             ]
+    //         ]
+    //     ]);
+    // }
 
     /**
      * Display the specified resource.
